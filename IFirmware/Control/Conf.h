@@ -36,7 +36,7 @@
   #define CHANNEL_I2C         0      // communication channel = I2C
   #define CHANNEL_SER         1      // communication channel = Serial
   
-  #define SELECT CHANNEL      CHANNEL_SER  // default channel is serial (change if required)
+  #define SELECT_CHANNEL      CHANNEL_SER  // default channel is serial (change if required)
   #define WHOAMI              99           // Address of Arduino for I2C and identity to be used for Serial communication 
                                            // (helpful in uniquely identifying this device)
 
@@ -91,16 +91,7 @@
   #define W003 "w004"      // Warning: high voltage motor 2
 
 
-  //==================================================================
-  // Pin Configurations (assignments)
-
-  #define M1_PWM  9
-  #define M1_IN1  2
-  #define M1_IN2  3
   
-  #define M2_PWM  10
-  #define M2_IN1  4
-  #define M2_IN2  5
   
   
 #endif

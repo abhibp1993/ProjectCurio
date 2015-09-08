@@ -47,7 +47,7 @@
 
       
     public:                                                     // Public Variables and Methods
-      Motor(uint8_t in1, uint8_t in2, uint8_t pwm);             // Instantiation method
+      Motor(uint8_t pwm, uint8_t in1, uint8_t in2);             // Instantiation method
       
       boolean start;                                            // Start/Stop the motor (true: start, false: stop)
       boolean brake;                                            // Engage brake to motor
@@ -59,7 +59,7 @@
       float getSpeed();                                         // Returns the actual speed (if encoders used), else returns estimated speed.
       boolean getDirection();                                   // Returns true, if motor is currently rotating clockwise. Value is sensed if encoders are used.
       
-      void setPWM(float duty, boolean vfdEnabled = true);       // Sets the duty cycle of PWM. vfdEnabled optimizes the range of operation for Polulu Motor.
+      void setPWM(float duty, boolean vfdEnabled);              // Sets the duty cycle of PWM. vfdEnabled optimizes the range of operation for Polulu Motor.
       void setSpeed(float rpm);                                 // Sets the speed of motor. (closed loop if encoders and pid is enabled. Else open loop).
 
   };
@@ -71,7 +71,8 @@
       float Kp, Ki, Kd;                                         // P, I, D Gains. Range: 0-1
       float lastInput, ITerm;
       
-      float update(float reference, float current);
+      PID();                                                    // Constructor
+      float update(float reference, float current);             // Runs one update cycle.
   };
   
   
@@ -88,7 +89,7 @@
       void enableInterrupts();                                  // Enable the PCINT interrupt on selected pins.
     
     public:
-      Encoder(uint8_t chA, uint8_t chB = -1);                   // Instantiation (255 or -1 indicates not set or used)
+      Encoder(uint8_t chA, uint8_t chB);                        // Instantiation (255 or -1 indicates not set or used)
       
       uint32_t getCounts();                                     // returns the counts since last reset.
       uint32_t getCountsAndReset();                             // returns the counts and resets the counter.
@@ -96,5 +97,8 @@
       
   };
   
+  
+  extern Motor m1;
+  extern Motor m2;
   
 #endif
