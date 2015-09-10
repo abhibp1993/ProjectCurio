@@ -50,6 +50,8 @@
       
       float getDistance();  // returns distance
       float getRawTime();   // returns raw pulse duration
+      
+      bool IS_SONAR_FEEDBACK ,IS_MUX_USED;
   };
   
   

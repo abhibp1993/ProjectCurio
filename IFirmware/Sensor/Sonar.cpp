@@ -51,7 +51,10 @@ Last Modified:
   1. abhibp1993: 08 Sept 2015, 1810
 **********************************************************************************/
 Sonar::Sonar(uint8_t pinEcho, uint8_t pinTrig){
-  
+
+echo = pinEcho;
+trig =pinTrig;
+waitTimeInMillis=10.0;
 }
 
 
@@ -70,6 +73,10 @@ Last Modified:
   1. abhibp1993: 08 Sept 2015, 1810
 **********************************************************************************/
 Sonar::Sonar(uint8_t pinEcho, uint8_t pinTrig, Mux81 muxTrig){
+  echo =pinEcho;
+  IS_MUX_USED =true;
+  trig =pinTrig;
+  myMux-> muxTrig;
   
 }
 
@@ -95,6 +102,7 @@ Last Modified:
   1. abhibp1993: 08 Sept 2015, 1810
 **********************************************************************************/
 float Sonar::getDistance(){
+  float tm = getRawTime();
   
 }
 
