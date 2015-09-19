@@ -25,4 +25,5 @@
 #ifndef COMMSERIAL_h
 #define COMMSERIAL_h
 
+  #define HELLO 0
 #endif

@@ -29,6 +29,8 @@
   #include "Arduino.h"
   #include "Conf.h"
   
+  #define MOTOR_MAX_SPEED 300.0
+  
   class Motor;
   class Encoder;
   class PID;
@@ -40,18 +42,14 @@
       uint8_t pwm, in1, in2;                                    // Control Pins
       float refSpeed, duty;                                     // Speed Control Parameters
       float speed;                                              // speed: in rpm (float)
-      boolean direction;                                        // direction: true = clockwise, false = anticlockwise
       boolean _isPID, _isEncoder;                               // Configuration Parameters
-      
-      
-
-      
+    
     public:                                                     // Public Variables and Methods
       Motor(uint8_t pwm, uint8_t in1, uint8_t in2);             // Instantiation method
       
       boolean start;                                            // Start/Stop the motor (true: start, false: stop)
       boolean brake;                                            // Engage brake to motor
-      boolean reverse;                                          // Safely reverses the direction of motor.
+      boolean direction;                                        // direction: true = clockwise, false = anticlockwise
       
       Encoder* myEnc;                                           // Encoder Associated with this motor
       PID* myPID;                                               // PID Regulator associated with this motor
@@ -59,7 +57,7 @@
       float getSpeed();                                         // Returns the actual speed (if encoders used), else returns estimated speed.
       boolean getDirection();                                   // Returns true, if motor is currently rotating clockwise. Value is sensed if encoders are used.
       
-      void setPWM(float duty, boolean vfdEnabled);              // Sets the duty cycle of PWM. vfdEnabled optimizes the range of operation for Polulu Motor.
+      void setPWM(float duty);                                  // Sets the duty cycle of PWM. vfdEnabled optimizes the range of operation for Polulu Motor.
       void setSpeed(float rpm);                                 // Sets the speed of motor. (closed loop if encoders and pid is enabled. Else open loop).
 
   };
@@ -93,8 +91,7 @@
       
       uint32_t getCounts();                                     // returns the counts since last reset.
       uint32_t getCountsAndReset();                             // returns the counts and resets the counter.
-      uint8_t checkError();                                     // Returns the error counting (unacceptable levels on channels)
-      
+      uint8_t checkError();                                     // Returns the error counting (unacceptable levels on channels)  
   };
   
   

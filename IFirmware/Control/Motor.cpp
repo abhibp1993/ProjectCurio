@@ -30,6 +30,73 @@
  Motor m2(M2_PWM, M2_IN1, M2_IN2);
   
   
+  
+//==========================================================================================================
+// Helper Functions 
+  
+  
+/* [HELPER]**********************************************************************
+Function: setPWMFrequency 
+Parameters: 
+  1. pin: PWM pin on which the frequency is to be set. 
+  2. divisor: prescaling factor to set the frequency.
+
+Description:
+  The function changes the frequency on pwm pin. 
+
+  $$ Currently only pin 9, 10 frequency can be changed. $$
+  $$ Changing frequency on either pin changes the pwm-frequency on other also $$
+
+Refer PoluluMotor Library by Abhishek N. Kulkarni (abhibp1993)
+Adopted from macegr's code. (Post: http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1235060559/0#4)
+**********************************************************************************/
+void setPWMFrequency(int pin, int divisor) {
+  byte mode;
+  if(pin == 9 || pin == 10) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 64: mode = 0x03; break;
+      case 256: mode = 0x04; break;
+      case 1024: mode = 0x05; break;
+      default: return;
+    }
+    //TCCR2B = TCCR2B & 0b11111000 | mode;  // bug corrected from PoluluMotor class.
+    TCCR1B = TCCR1B & 0b11111000 | mode;
+  }
+}
+ 
+/* [HELPER]**********************************************************************
+Function: getDivisor 
+Parameters: 
+  1. pin: pin for which the duty is being provided.
+  1. duty: desired duty cycle on the pwm pin. [Value in range 0-1]
+
+Description:
+  The function returns an appropriate PWM-frequency so as to deliver enough current
+  on pwm pin to drive the motor. (a good choice in case of high torque motors)
+  
+  $$ The slabs are chosen according to Polulu 25D metal gearmotor 6V/6A $$
+  
+Adopted and modified from PoluluMotor Library by Abhishek N. Kulkarni (abhibp1993)
+**********************************************************************************/
+int getDivisor(uint8_t pin, double duty){
+  
+  static float pin9Duty, pin10Duty;
+  
+  if       (pin == 9) { pin9Duty  = duty; }
+  else if  (pin == 10){ pin10Duty = duty; }
+  
+  duty = min(pin9Duty, pin10Duty);
+  
+  if       (duty < 0.08) {}
+  else if  (duty >= 0.08  && duty < 0.30)   { return 1024;}
+  else if  (duty >= 0.30  && duty < 0.50)   { return 256 ;}  
+  else if  (duty >= 0.50  && duty < 1.00)   { return 64  ;}
+  else if  (duty >= 1.00)                   { return 64  ;}
+}
+
+  
 //==========================================================================================================
 // Motor Class Functions:
  
@@ -45,9 +112,16 @@ Description:
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 11 Sep 2015, 1000
 **********************************************************************************/
 Motor::Motor(uint8_t pwm, uint8_t in1, uint8_t in2){
+  this->pwm = pwm;
+  this->in1 = in1;
+  this->in2 = in2;
   
+  this->refSpeed = 0;
+  this->duty = 0;
+  this->direction = true;
 }
 
 
@@ -59,13 +133,25 @@ Description:
   Returns the speed of motor.
   If encoder is enabled and working fine, then the speed is sensed value. However, 
   if the encoder is not used, the speed is predicted from PWM duty cycle and motor
-  parameters (voltage and max. speed)
+  parameters (suty and max. speed)
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 11 Sep 2015, 1000
 **********************************************************************************/
 float Motor::getSpeed(){
+  static long int _lastRunTime;
+  long int _now = millis() - _lastRunTime;
   
+  if (this->_isEncoder){
+    long int count = this->myEnc->getCountsAndReset();
+    this->speed = (count/1636.8) * (1000 / _now) * 60; 
+  }
+  else{
+    this->speed = MOTOR_MAX_SPEED * this->duty;
+  }
+  
+  return this->speed;
 }
 
 
@@ -100,11 +186,64 @@ Description:
   Variable frequency provides a larger range by tweaking the inductive impedance of
   motor. The frequencies used here are tested and optimized for Polulu 25mm Diameter 
   Metal Gearmotor (6V/6A, 285RPM).
+
+Remarks:
+  If duty > maximum permitted bound, the duty is set to maximum value (clamped)
+  If duty < minimum permitted bound, the motor is stopped.
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 11 Sep 2015, 1043 (scrap: reason -- unorganized)
+  3. abhibp1993: 19 Sep 2015, 1041 (made changes in structure of motor to make life
+                                    easy: -ve duty => reverse run. No rev flag. )
 **********************************************************************************/
-void Motor::setPWM(float duty, boolean vfdEnabled = true){
+void Motor::setPWM(float duty){
+
+  // negative duty
+  if (duty < 0){
+    direction = false;
+    duty = -duty;
+  }
+  else{
+    direction = true;
+  }
+  
+  
+  // Clip duty
+  if (duty > MOTOR_UBOUND){
+    start = true;
+    duty = MOTOR_UBOUND;
+    // warning ------
+  }
+  else if (duty < MOTOR_LBOUND){ 
+    start = true; 
+    brake = true;
+    // warning ------
+  }
+  else{
+    start = false;
+  }
+  
+  
+  // If motor is "stop", then disconnect
+  if (start = false){
+    pinMode(pwm, INPUT);
+  }
+  else{ // motor is "start", so start it!
+
+    // check braking
+    if (brake = true){
+      digitalWrite(in1, HIGH);
+      digitalWrite(in2, HIGH);
+      delayMicroseconds(500);      // What should be this delay? Ideally? Theoretically -> may be based on motor model. 
+    }
+    
+    digitalWrite(in1, direction);
+    digitalWrite(in2, !direction);
+    pinMode(pwm, OUTPUT);
+    
+    analogWrite(pwm, (int)(duty * 255));
+  }
   
 }
 

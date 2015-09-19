@@ -49,8 +49,8 @@
   
   
   #define ENCODER_CPR          48*34.1   // encoder CPR rating (2 channel, both rising and falling edges should be counted)
-  #define MOTOR_UBOUND         90        // Upper bound on motor PWM duty cycle
-  #define MOTOR_LBOUND          8        // Lower bound on motor PWM duty cycle
+  #define MOTOR_UBOUND         0.9       // Upper bound on motor PWM duty cycle
+  #define MOTOR_LBOUND         0.08      // Lower bound on motor PWM duty cycle
   
   
   #define IS_CONST_PID         false     // if change of PID gains (online) is permitted

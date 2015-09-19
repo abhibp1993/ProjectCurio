@@ -22,12 +22,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.			            *
  ***********************************************************************************************************/
 
-void setup() {
-  // put your setup code here, to run once:
 
+#include "Conf.h"
+#include "Motor.h"
+#include "PinConfig.h"
+#if (SELECT_CHANNEL == CHANNEL_SER)         // if current feedback is taken, set the upper bound for error generation/protection
+  #include "CommSerial.h"
+#else
+  include "CommI2C.h"
+#endif
+
+
+
+void setup() {
+  
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  
+  // Check Battery Voltage
+  
+  // Check Current through motors
+  
+  // Check Voltage across motors
+  
+  // 
 
 }
