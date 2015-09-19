@@ -82,8 +82,8 @@
       long int counts;                                          // counts store
       uint8_t errors;                                           // error store
       
-      boolean valA, lastValA;                                   // logic levels on channel A
-      boolean valB, lastValB;                                   // logic levels on channel B
+      uint8_t lastValA;                                         // logic levels on channel A
+      uint8_t lastValB;                                         // logic levels on channel B
       
       void enableInterrupts();                                  // Enable the PCINT interrupt on selected pins.
     

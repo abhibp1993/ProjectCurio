@@ -33,8 +33,62 @@
   
 //==========================================================================================================
 // Helper Functions 
+
+/* [HELPER]**********************************************************************
+Structure: IOStruct 
+
+Description:
+  Stores the AVR based Register pointers for the given pin
   
+Refer PoluluMotor Library by Abhishek N. Kulkarni (abhibp1993)
+Adopted from macegr's code. (Post: http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1235060559/0#4)
+**********************************************************************************/
+typedef struct IOStruct
+{
+	// if these aren't volatile, the compiler sometimes incorrectly optimizes away operations involving these registers:
+	volatile unsigned char* pinRegister;
+	volatile unsigned char* portRegister;
+	volatile unsigned char* ddrRegister;
+	unsigned char bitmask;
+} IOPin;
+
+
+/* [HELPER]**********************************************************************
+Function: getIORegisters 
+Parameters: 
+  1. pin: pin for which the registers need to be found out. 
+  2. io: IOPin instance. 
+
+Description:
+  The function modifies the IOPin structure to contain the respective registers. 
+
+  $$ Only digital pins are allowed. $$
+
+Refer to Polulu's OrangutanDigital Library.
+**********************************************************************************/
+void getIORegisters(unsigned char pin, IOPin* io){
+  io->pinRegister = 0;
+  io->portRegister = 0;
+  io->ddrRegister = 0;
+  io->bitmask = 0;
   
+  if (pin < 8){			// pin 0 = PD0, ..., 7 = PD7
+    io->pinRegister = (unsigned char*)&PIND;
+    io->portRegister = (unsigned char*)&PORTD;
+    io->ddrRegister = (unsigned char*)&DDRD;
+    io->bitmask = 1 << pin;
+  }
+  else if (pin < 14){		// pin 8 = PB0, ..., 13 = PB5 (PB6 and PB7 reserved for external clock)
+    io->pinRegister = (unsigned char*)&PINB;
+    io->portRegister = (unsigned char*)&PORTB;
+    io->ddrRegister = (unsigned char*)&DDRB;
+    io->bitmask = 1 << (pin - 8);
+  }
+  else{
+    // warning --------
+  }
+}
+
 /* [HELPER]**********************************************************************
 Function: setPWMFrequency 
 Parameters: 
@@ -65,6 +119,7 @@ void setPWMFrequency(int pin, int divisor) {
     TCCR1B = TCCR1B & 0b11111000 | mode;
   }
 }
+ 
  
 /* [HELPER]**********************************************************************
 Function: getDivisor 
@@ -453,3 +508,56 @@ uint8_t Encoder::checkError(){
   sei();
   return temp;
 }
+
+void Encoder::enableInterrupts(){
+  IOPin ioA, ioB;
+  getIORegisters(pinA, ioA);
+  getIORegisters(pinB, ioB);
+  
+  // chA, chB enable Interrupt Mask
+  if (ioA.pinRegister == &PINB)
+    PCMSK0 |= ioA.bitmask;
+  if (ioA.pinRegister == &PINC)
+    PCMSK1 |= ioA.bitmask;
+  if (ioA.pinRegister == &PIND)
+    PCMSK2 |= ioA.bitmask;
+    
+  if (ioB.pinRegister == &PINB)
+    PCMSK0 |= ioB.bitmask;
+  if (ioB.pinRegister == &PINC)
+    PCMSK1 |= ioB.bitmask;
+  if (ioB.pinRegister == &PIND)
+    PCMSK2 |= ioB.bitmask;
+ 
+  // Set data direction register 
+  *ioA.ddrRegister &= ~ioA.bitmask;
+  *ioB.ddrRegister &= ~ioB.bitmask;
+  
+  // Enable PCINT interrupt
+  PCICR = 0xFF;
+}
+
+
+// ISR Handle --> Cannot access the internal variables of motors. 
+// How to resolve this issue --> PLEASE THINK!!
+ISR(PCINT0_vect)
+{
+  uint8_t valA = digitalRead(pinA);
+  uint8_t valB = digitalRead(pinB);
+  
+  uint8_t plus  = valA ^ lastValB;
+  uint8_t minus = valB ^ lastValA;
+  
+  if (plus)    { counts++; }
+  if (minus)   { counts--; }
+  
+  if (valA != lastValA && valB != lastValB){
+    errors = 1;
+    
+  lastValA = valA;
+  lastValB = valB;
+  
+}
+
+ISR(PCINT1_vect, ISR_ALIASOF(PCINT0_vect));
+ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
