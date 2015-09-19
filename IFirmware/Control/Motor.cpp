@@ -167,9 +167,10 @@ Description:
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 19 Sep 2015, 1049 (ignored encoder based direction sense.)
 **********************************************************************************/
 boolean Motor::getDirection(){
-  
+  return direction;
 }
 
 
@@ -265,6 +266,12 @@ Last Modified:
 **********************************************************************************/
 void Motor::setSpeed(float rpm){
   
+  if (!this->_isEncoder && this->_isPID){
+    // to do
+  }
+  else{
+    this->setPWM(float(rpm) / MOTOR_MAX_SPEED);
+  }
 }
 
 
