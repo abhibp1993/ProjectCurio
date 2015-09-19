@@ -27,6 +27,7 @@
 #define MOTOR_h
 
   #include "Arduino.h"
+  #include <avr/io.h>
   #include "Conf.h"
   
   #define MOTOR_MAX_SPEED 300.0
@@ -67,7 +68,7 @@
     
     public:
       float Kp, Ki, Kd;                                         // P, I, D Gains. Range: 0-1
-      float lastInput, ITerm;
+      float lastErr, ITerm;
       
       PID();                                                    // Constructor
       float update(float reference, float current);             // Runs one update cycle.
@@ -81,16 +82,16 @@
       long int counts;                                          // counts store
       uint8_t errors;                                           // error store
       
-      char val_a, last_val_a;                                   // logic levels on channel A
-      char val_b, last_val_b;                                   // logic levels on channel B
+      boolean valA, lastValA;                                   // logic levels on channel A
+      boolean valB, lastValB;                                   // logic levels on channel B
       
       void enableInterrupts();                                  // Enable the PCINT interrupt on selected pins.
     
     public:
       Encoder(uint8_t chA, uint8_t chB);                        // Instantiation (255 or -1 indicates not set or used)
       
-      uint32_t getCounts();                                     // returns the counts since last reset.
-      uint32_t getCountsAndReset();                             // returns the counts and resets the counter.
+      long int getCounts();                                     // returns the counts since last reset.
+      long int getCountsAndReset();                             // returns the counts and resets the counter.
       uint8_t checkError();                                     // Returns the error counting (unacceptable levels on channels)  
   };
   

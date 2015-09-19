@@ -287,9 +287,15 @@ Description:
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 19 Sep 2015, 1505
 **********************************************************************************/
 PID::PID(){
+  Kp = 1.0;
+  Ki = 0.0;
+  Kd = 0.0;
   
+  lastErr = 0.0;
+  ITerm = 0.0;  
 }
 
 
@@ -308,12 +314,40 @@ Description:
   The update implements a generic scaled PID controller where all inputs and outputs
   are scaled in range [0, 1]. The output is a differential signal in range [-1, 1] 
   denoting the "change" to be made in control signal. 
+
+Remark: 
+  The inputs outside the (-1, 1) range are clipped off. 
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 19 Sep 2015, 1505
 **********************************************************************************/
 float PID::update(float reference, float current){
   
+  // check reference and current values
+  if (reference < -1 || reference > 1){
+    reference = constrain(reference, -1, 1);
+    // warning ----------
+  }
+
+  if (current < -1 || current > 1){
+    current = constrain(current, -1, 1);
+    // warning ----------
+  }
+  
+  
+  // Compute the error
+  float err = reference - current;
+  ITerm += err;
+  float diffErr = err - lastErr;
+  
+  // Compute correction
+  float changeInOutput = Kp*err + Ki*ITerm + Kd*diffErr;
+  changeInOutput = constrain(changeInOutput, -1, 1);
+  
+  // Book-keeping and return
+  lastErr = err;
+  return changeInOutput;
 }
 
 
@@ -330,12 +364,29 @@ Parameters:
 
 Description:
   Instantiates an encoder object with single or two channels of encoders. 
+
+Remark:
+  For now (19 Sep 2015) we assume both encoder channels MUST be used.
+  Hence, no handle for chB = -1 is coded.
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 19 Sep 2015, 1530
 **********************************************************************************/
 Encoder::Encoder(uint8_t chA, uint8_t chB = -1){
   
+  cli();
+  
+  counts = 0;
+  pinA = chA;
+  pinB = chB;
+  
+  enableInterrupts();
+  lastValA = digitalRead(pinA);
+  lastValB = digitalRead(pinB);
+  
+  PCIFR = 0xFF;  // Clear all interrupt flags
+  sei();
 }
 
 
@@ -350,9 +401,13 @@ Description:
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 19 Sep 2015, 1530
 **********************************************************************************/
-uint32_t Encoder::getCounts(){
-  
+long int Encoder::getCounts(){
+  cli();
+  long int temp = counts;
+  sei();
+  return temp;
 }
 
 
@@ -368,9 +423,14 @@ Description:
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 19 Sep 2015, 1530
 **********************************************************************************/
 uint32_t Encoder::getCountsAndReset(){
-  
+  cli();
+  long int temp = counts;
+  counts = 0;
+  sei();
+  return temp;
 }
 
 
@@ -378,14 +438,18 @@ uint32_t Encoder::getCountsAndReset(){
 Function: checkError
 Parameters: None
 Returns: 
-  1. Number of error states (32-bit integer)
+  1. Number of error states (8-bit integer)
   
 Description:
   Reads the number of error states. 
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
+  2. abhibp1993: 19 Sep 2015, 1530
 **********************************************************************************/
 uint8_t Encoder::checkError(){
-  
+  cli();
+  uint8_t temp = errors;
+  sei();
+  return temp;
 }
