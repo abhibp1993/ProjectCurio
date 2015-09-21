@@ -26,8 +26,8 @@
  #include "Motor.h"
  #include "PinConfig.h"
  
- Motor m1(M1_PWM, M1_IN1, M1_IN2);
- Motor m2(M2_PWM, M2_IN1, M2_IN2);
+ //Motor m1(M1_PWM, M1_IN1, M1_IN2);
+ //Motor m2(M2_PWM, M2_IN1, M2_IN2);
   
   
   
@@ -322,7 +322,7 @@ Last Modified:
 void Motor::setSpeed(float rpm){
   
   if (!this->_isEncoder && this->_isPID){
-    // to do
+    myPID.update(rpm, speed);    // what about direction reversal?? Does it need to be separately handled?
   }
   else{
     this->setPWM(float(rpm) / MOTOR_MAX_SPEED);
