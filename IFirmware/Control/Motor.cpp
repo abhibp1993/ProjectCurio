@@ -322,7 +322,7 @@ Last Modified:
 void Motor::setSpeed(float rpm){
   
   if (!this->_isEncoder && this->_isPID){
-    myPID.update(rpm, speed);    // what about direction reversal?? Does it need to be separately handled?
+    this->myPID->update(rpm, speed);    // what about direction reversal?? Does it need to be separately handled?
   }
   else{
     this->setPWM(float(rpm) / MOTOR_MAX_SPEED);
