@@ -21,3 +21,15 @@
  * You should have received a copy of the GNU General Public License					    *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.			            *
  ***********************************************************************************************************/
+ 
+
+#if (SELECT_CHANNEL == CHANNEL_I2C)
+  #include "CommI2C.h"
+#else
+  #include "CommSerial.h"
+#endif
+
+// Global Variables for communication
+float refSpeedM1;
+float refSpeedM2;
+

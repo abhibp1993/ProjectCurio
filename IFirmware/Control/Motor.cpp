@@ -480,7 +480,7 @@ Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
   2. abhibp1993: 19 Sep 2015, 1530
 **********************************************************************************/
-uint32_t Encoder::getCountsAndReset(){
+long int Encoder::getCountsAndReset(){
   cli();
   long int temp = counts;
   counts = 0;
@@ -511,8 +511,8 @@ uint8_t Encoder::checkError(){
 
 void Encoder::enableInterrupts(){
   IOPin ioA, ioB;
-  getIORegisters(pinA, ioA);
-  getIORegisters(pinB, ioB);
+  getIORegisters(pinA, &ioA);
+  getIORegisters(pinB, &ioB);
   
   // chA, chB enable Interrupt Mask
   if (ioA.pinRegister == &PINB)
@@ -542,20 +542,20 @@ void Encoder::enableInterrupts(){
 // How to resolve this issue --> PLEASE THINK!!
 ISR(PCINT0_vect)
 {
-  uint8_t valA = digitalRead(pinA);
-  uint8_t valB = digitalRead(pinB);
-  
-  uint8_t plus  = valA ^ lastValB;
-  uint8_t minus = valB ^ lastValA;
-  
-  if (plus)    { counts++; }
-  if (minus)   { counts--; }
-  
-  if (valA != lastValA && valB != lastValB){
-    errors = 1;
-    
-  lastValA = valA;
-  lastValB = valB;
+//  uint8_t valA = digitalRead(pinA);
+//  uint8_t valB = digitalRead(pinB);
+//  
+//  uint8_t plus  = valA ^ lastValB;
+//  uint8_t minus = valB ^ lastValA;
+//  
+//  if (plus)    { counts++; }
+//  if (minus)   { counts--; }
+//  
+//  if (valA != lastValA && valB != lastValB){
+//    errors = 1;
+//    
+//  lastValA = valA;
+//  lastValB = valB;
   
 }
 

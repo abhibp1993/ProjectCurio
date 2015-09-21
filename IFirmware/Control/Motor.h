@@ -28,6 +28,7 @@
 
   #include "Arduino.h"
   #include <avr/io.h>
+  #include <avr/interrupt.h>
   #include "Conf.h"
   
   #define MOTOR_MAX_SPEED 300.0

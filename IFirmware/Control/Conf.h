@@ -91,6 +91,10 @@
   #define W003 "w004"      // Warning: high voltage motor 2
 
 
+  //==================================================================
+  // Common variables
+  
+  
   
   
   

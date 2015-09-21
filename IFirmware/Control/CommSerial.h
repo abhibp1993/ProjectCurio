@@ -25,5 +25,9 @@
 #ifndef COMMSERIAL_h
 #define COMMSERIAL_h
 
-  #define HELLO 0
+  extern float refSpeedM1;
+  extern float refSpeedM2;
+  
+  
+  
 #endif

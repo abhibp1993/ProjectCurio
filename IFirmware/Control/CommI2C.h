@@ -25,4 +25,7 @@
 #ifndef COMMI2C_h
 #define COMMI2C_h
 
+  extern float refSpeedM1;
+  extern float refSpeedM2;
+
 #endif

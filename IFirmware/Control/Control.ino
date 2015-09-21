@@ -46,6 +46,22 @@ void loop() {
   
   // Check Voltage across motors
   
-  // 
+  // Check Motor Diagnostic pins
+  
+  // Primary Protection 
+  
+  // Motor Functionality
+    // Get recent reference speed
+    // Based on configuration, apply the update
+  
+  // Communication Packet Ready
+    // CT: Always --> Motor Speeds
+    // CT: Conf --> Motor Current
+    // CT: Conf --> Motor Voltage
+    // CT: Conf --> Battery Voltage
+    // Errors
+    
+    // Call an rosUpdate function for transmission. 
+
 
 }
