@@ -35,20 +35,123 @@
 
 
 void setup() {
+  // DG pins pull-up
   
+  // Motor Instantiation
+  Motor m1(M1_PWM, M1_IN1, M1_IN2);
+  Motor m2(M2_PWM, M2_IN1, M2_IN2);
+  
+  // Encoder Instantiation
+  Encoder e1(M1_CHA, M1_CHB);
+  Encoder e2(M2_CHA, M2_CHB);
+  m1.myEnc = &e1;
+  m2.myEnc = &e2;
+  
+  // PID Instantiation
+  #if (IS_PID_ACTIVE == true)
+    PID pid1;
+    PID pid2;
+    m1.myPID = &pid1;
+    m2.myPID = &pid2;    
+    
+    #if (IS_CONST_PID == true)
+      m1.myPID.Kp = CONST_M1_Kp;
+      m1.myPID.Ki = CONST_M1_Ki;
+      m1.myPID.Kd = CONST_M1_Kd;
+      
+      m2.myPID.Kp = CONST_M2_Kp;
+      m2.myPID.Ki = CONST_M2_Ki;
+      m2.myPID.Kd = CONST_M2_Kd;
+    #endif
+  #endif
+
 }
 
 void loop() {
   
   // Check Battery Voltage
+  float battVoltage = 0;
+  for (int i = 0; i < BATT_ITER; i++){
+    battVoltage += analogRead(BATT_V);
+  }
+  battVoltage = battVoltage * ADC_RESOLUTION / BATT_ITER;
+  
   
   // Check Current through motors
+  #if (IS_CURR_FEEDBACK == true)
+  
+    float m1Current = 0, m2Current = 0;
+    for (int i = 0; i < CURR_ITER; i++){
+      m1Current += analogRead(M1_CS);
+      m2Current += analogRead(M2_CS);
+    }
+    m1Current = m1Current * ADC_RESOLUTION / CURR_ITER * M_CS_RESO;
+    m2Current = m2Current * ADC_RESOLUTION / CURR_ITER * M_CS_RESO ;
+  
+  #endif
+  
   
   // Check Voltage across motors
+  #if (IS_VOLT_FEEDBACK == true)
+  
+    float m1Voltage = 0, m2Voltage = 0;
+    for (int i = 0; i < VOLT_ITER; i++){
+      m1Voltage += analogRead(M1_CS);
+      m2Voltage += analogRead(M2_CS);
+    }
+    m1Voltage = m1Voltage * ADC_RESOLUTION / VOLT_ITER ;
+    m2Voltage = m2Voltage * ADC_RESOLUTION / VOLT_ITER ;
+  
+  #endif
+  
   
   // Check Motor Diagnostic pins
+  unsigned char m1Diag, m2Diag; 
+  m1Diag = (digitalRead(M1_DG) == HIGH) ? HIGH : LOW;
+  m2Diag = (digitalRead(M2_DG) == HIGH) ? HIGH : LOW;
   
   // Primary Protection 
+  if (battVoltage < 7.0){  // Low battery voltage protection
+    // Error -------------
+  }
+  
+  #if (IS_CURR_FEEDBACK == true)
+    
+    if (m1Current > CURR_WARN && m1Current < CURR_ERR)  {
+      // warn -------------
+    }
+    else if (m1Current > CURR_ERR) { 
+      // Error ------------
+    }
+    
+    if (m2Current > CURR_WARN && m2Current < CURR_ERR)  {
+      // warn -------------
+    }
+    else if (m2Current > CURR_ERR) { 
+      // Error ------------
+    }
+    
+  #endif
+  
+  
+  #if (IS_VOLT_FEEDBACK == true)
+    
+    if (m1Voltage > VOLT_WARN && m1Voltage < VOLT_ERR)  {
+      // warn -------------
+    }
+    else if (m1Voltage > VOLT_ERR) { 
+      // Error ------------
+    }
+    
+    if (m2Voltage > VOLT_WARN && m2Voltage < VOLT_ERR)  {
+      // warn -------------
+    }
+    else if (m2Voltage > VOLT_ERR) { 
+      // Error ------------
+    }
+    
+  #endif
+  
   
   // Motor Functionality
     // Get recent reference speed

@@ -26,8 +26,8 @@
  #include "Motor.h"
  #include "PinConfig.h"
  
- Motor m1(M1_PWM, M1_IN1, M1_IN2);
- Motor m2(M2_PWM, M2_IN1, M2_IN2);
+ //Motor m1(M1_PWM, M1_IN1, M1_IN2);
+ //Motor m2(M2_PWM, M2_IN1, M2_IN2);
   
   
   
