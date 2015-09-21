@@ -33,13 +33,19 @@
 #endif
 
 
+// Global Variables
+float m1RefSpeed;
+float m2RefSpeed;
+
+// Motor Instantiation
+Motor m1(M1_PWM, M1_IN1, M1_IN2);
+Motor m2(M2_PWM, M2_IN1, M2_IN2);
+
 
 void setup() {
   // DG pins pull-up
+  // ---
   
-  // Motor Instantiation
-  Motor m1(M1_PWM, M1_IN1, M1_IN2);
-  Motor m2(M2_PWM, M2_IN1, M2_IN2);
   
   // Encoder Instantiation
   Encoder e1(M1_CHA, M1_CHB);
@@ -153,9 +159,20 @@ void loop() {
   #endif
   
   
-  // Motor Functionality
-    // Get recent reference speed
-    // Based on configuration, apply the update
+  // Motor Functionality ===================================================
+  // Get recent reference speed
+  float m1CurrSpeed = m1.getSpeed();
+  float m2CurrSpeed = m2.getSpeed();
+  
+  // Based on configuration, apply the update
+  #if (RAW_OR_PROCESSED == true)
+    m1.setSpeed(m1RefSpeed);
+    m2.setSpeed(m2RefSpeed);
+  #else
+    m1.setPWM(m1RefSpeed);
+    m2.setPWM(m2RefSpeed);
+  #endif
+  
   
   // Communication Packet Ready
     // CT: Always --> Motor Speeds
