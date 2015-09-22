@@ -12,6 +12,9 @@ import util
 import numpy as np
 
 # Common Configurable Variables
+wheelBase = 0.15    #in meter
+wheelRadius = 0.09  #in meter
+
 #ULTRASONIC_RANGE_BOUND = 200    #in cm     --> Should come from some config file.
 
 
@@ -86,10 +89,22 @@ class SensorInput(object):
     def jerk(self):
         return np.array([self.state.jerx, self.state.jery])
 
-        
-    
+    def rosmessagize(self):
+        raise NotImplementedError('ROS Messages not yet finalized here @ io.SensorInput.')
     
     
     
 class Action(object):
-    pass
+    def __init__(self, fvel = 0.0, rvel = 0.0):
+        self.fvel = fvel
+        self.rvel = rvel
+
+    def transformToLowLevelCmd(self):
+        self.vr = (2 * self.fvel + self.rvel * wheelBase)/(2 * wheelRadius)
+        self.vl = (2 * self.fvel - self.rvel * wheelBase)/(2 * wheelRadius)
+        
+    def rosmessagize(self):
+        # make use of vr, vl. 
+        # if they are not defined, raise error/call the transformToLowLevelCmd method
+        raise NotImplementedError('ROS Messages not yet finalized here @ io.Action.')
+        
