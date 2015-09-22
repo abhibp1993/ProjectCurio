@@ -49,6 +49,7 @@ Description:
   
 Last Modified:
   1. abhibp1993: 08 Sept 2015, 1810
+  2. shrutiphadke: 10 Sept 2015 ,1415
 **********************************************************************************/
 Sonar::Sonar(uint8_t pinEcho, uint8_t pinTrig){
 
@@ -71,12 +72,13 @@ Description:
   
 Last Modified:
   1. abhibp1993: 08 Sept 2015, 1810
+  2. shrutiphadke: 10 Sept 2015 ,1415
 **********************************************************************************/
 Sonar::Sonar(uint8_t pinEcho, uint8_t pinTrig, Mux81 muxTrig){
   echo =pinEcho;
   IS_MUX_USED =true;
   trig =pinTrig;
-  myMux-> muxTrig;
+  myMux= &muxTrig;
   
 }
 
@@ -100,9 +102,15 @@ Remarks:
   
 Last Modified:
   1. abhibp1993: 08 Sept 2015, 1810
+  2. shrutiphadke: 10 Sept 2015 ,1415
 **********************************************************************************/
 float Sonar::getDistance(){
   float tm = getRawTime();
+  
+  float dist;
+  
+  dist = (tm*0.314/2)*10;
+  return dist;
   
 }
 
@@ -122,9 +130,13 @@ Warnings:
   
 Last Modified:
   1. abhibp1993: 08 Sept 2015, 1810
+  2. shrutiphadke: 10 Sept 2015 ,1415
 **********************************************************************************/
 float Sonar::getRawTime(){
-  
+  float duration;
+  duration = pulseIn(echo,HIGH);
+  duration =duration/1000;
+  return duration;
 }
 
 
@@ -132,6 +144,9 @@ float Sonar::getRawTime(){
 
 Mux81::Mux81(uint8_t chA, uint8_t chB, uint8_t chC){
   
+this->chA =chA;
+this->chB =chB;
+this->chC= chC;
 }
 
 
@@ -143,10 +158,42 @@ Returns: None
 Description:
   Selects the corresponding pin on Multiplexer.
   (Caution: Numbering is NOT 0-based, but starts from 1)
+
+Remarks: chC is the LSB
   
 Last Modified:
   1. abhibp1993: 08 Sept 2015, 1810
+  2. shrutiphadke: 10 Sept 2015 ,1415
 **********************************************************************************/
 void Mux81::select(uint8_t pinNum){
-  
+ switch(pinNum)
+ {
+ 
+ case 1:  digitalWrite(chA, LOW);
+          digitalWrite(chB, LOW);
+          digitalWrite(chC, LOW);
+          break;
+          
+ case 2:  digitalWrite(chA, LOW);
+          digitalWrite(chB, LOW);
+          digitalWrite(chC, HIGH);
+          break;
+          
+ case 3:  digitalWrite(chA, LOW);
+          digitalWrite(chB, HIGH);
+          digitalWrite(chC, LOW);
+          break;
+          
+ case 4:  digitalWrite(chA, LOW);
+          digitalWrite(chB, HIGH);
+          digitalWrite(chC, HIGH);
+          break;
+          
+ case 5:  digitalWrite(chA, HIGH);
+          digitalWrite(chB, LOW);
+          digitalWrite(chC, LOW);
+          break;
+ 
+ }
 }
+ 

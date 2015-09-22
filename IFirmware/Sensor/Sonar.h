@@ -30,6 +30,8 @@
 
   // Utility Class for easy maintainance of Digital MUX
   class Mux81{
+    private:
+    uint8_t chA, chB, chC;
     public:
       Mux81(uint8_t chA, uint8_t chB, uint8_t chC);
       void select(uint8_t pinNum);
