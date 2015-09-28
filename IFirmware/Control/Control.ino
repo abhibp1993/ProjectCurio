@@ -23,10 +23,9 @@
  ***********************************************************************************************************/
 //ROS imports
 #include <ros.h>
-#include <curio_msgs/motor.h>
+#include <curio_msgs/control_arduino.h>
 #include <std_msgs/String.h>
-#include <std_msgs/Float32.h>
-#include <curio_msgs/gain.h>
+#include <curio_msgs/pid.h>
 
 #include "Conf.h"
 #include "Motor.h"
@@ -45,32 +44,16 @@ float m2RefSpeed;
 ros::NodeHandle nh; // Arduino node
 
 //ROS message object
-curio_msgs::motor motor_speed;
-curio_msgs::motor motor_current;
-curio_msgs::motor motor_voltage;
-curio_msgs::motor motor_distance;
+curio_msgs::control_arduino control_arduino_status;
 std_msgs::String error_string;
-std_msgs::Float32 battery_voltage;
 
 // Motor Instantiation
 Motor m1(M1_PWM, M1_IN1, M1_IN2);
 Motor m2(M2_PWM, M2_IN1, M2_IN2);
 
 //ROS publishers
-ros::Publisher speed_pub("curio_speed", &motor_speed);
-ros::Publisher current_pub("curio_current", &motor_current);
-ros::Publisher voltage_pub("curio_voltage", &motor_voltage);
-ros::Publisher distance_pub("curio_distance", &motor_distance);
+ros::Publisher control_arduino_status_pub("control_arduino_status", &control_arduino_status);
 ros::Publisher error_pub("curio_control_error", &error_string);
-ros::Publisher batteryVol_pub("curio_battery_voltage", &battery_voltage);
-
-//Subsciber function
-void gain_callback(const curio_msgs::gain &gain_msg){
-      //do nothing
-  
-}
-//ROS Subscribers (Always make subscriber below the subscription function)
-ros::Subscriber<curio_msgs::gain> gain_sub("curio_gain", gain_callback );
 
 //test
 char hello[13] = "Error";
@@ -83,16 +66,8 @@ void setup() {
   nh.initNode();
   
   //Advertise publishers
-  nh.advertise(speed_pub);
-  nh.advertise(voltage_pub);
-  nh.advertise(current_pub);
-  nh.advertise(batteryVol_pub);
-  nh.advertise(distance_pub);
+  nh.advertise(control_arduino_status_pub);
   nh.advertise(error_pub);
-  
-  //Subscriber
-  //nh.subscribe(gain_sub);
- 
   // DG pins pull-up
   // ---
   
@@ -126,7 +101,7 @@ void setup() {
 
 void loop() {
   
-  timeLoop = micros() - timeLoop;
+  timeLoop = micros();
   
   // Check Battery Voltage
   float battVoltage = 0;
@@ -235,29 +210,28 @@ void loop() {
     // Errors
     
     // Call an rosUpdate function for transmission.
-  motor_speed.motor1 = m1CurrSpeed;
-  motor_speed.motor2 = m2CurrSpeed;
+  control_arduino_status.motor_speed.motor1 = m1CurrSpeed;
+  control_arduino_status.motor_speed.motor2 = m2CurrSpeed;
   
   #if (IS_CURR_FEEDBACK == true)
-    motor_current.motor1 = m1Current;
-    motor_current.motor2 = m2Current;
+    control_arduino_status.motor_current.motor1 = m1Current;
+    control_arduino_status.motor_current.motor2 = m2Current;
   #endif
   
   #if (IS_VOLT_FEEDBACK == true)
-    motor_voltage.motor1 = m1Voltage;
-    motor_voltage.motor2 = m2Voltage;
+    control_arduino_status.motor_voltage.motor1 = m1Voltage;
+    control_arduino_status.motor_voltage.motor2 = m2Voltage;
   #endif
   
-  battery_voltage.data = battVoltage;
+  control_arduino_status.battery_voltage = battVoltage;
   
   error_string.data = hello;
   
-  motor_speed.motor1 = timeSetup;
-  motor_speed.motor2 = timeLoop;
+  control_arduino_status.motor_speed.motor1 = timeSetup;
+  control_arduino_status.motor_speed.motor2 = timeLoop;
   
   error_pub.publish( &error_string );
-  speed_pub.publish( &motor_speed );
+  control_arduino_status_pub.publish( &control_arduino_status );
   
   nh.spinOnce();
-
 }

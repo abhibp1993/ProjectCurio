@@ -65,14 +65,14 @@
   #endif
   
   
-  #define IS_CURR_FEEDBACK    false      // if current feedback is disabled/enabled
+  #define IS_CURR_FEEDBACK    true      // if current feedback is disabled/enabled
   #if (IS_CURR_FEEDBACK == true)         // if current feedback is taken, set the upper bound for error generation/protection
     #define CURR_ERR   6.5               // maximum permissible current in Amps (set to value > 35 for bypassing the protection)
     #define CURR_WARN  5.5               // maximum permissible current in Amps (set to value > 35 for bypassing the protection)
     #define CURR_ITER   10               // size of SMA filter for motor current (don't keep it large, slows the measurement process)
   #endif
   
-  #define IS_VOLT_FEEDBACK    false      // if voltage feedback is used
+  #define IS_VOLT_FEEDBACK    true      // if voltage feedback is used
   #if (IS_VOLT_FEEDBACK == true)         // if current feedback is taken, set the upper bound for error generation/protection
     #define VOLT_ERR   7                 // maximum permissible current in voltage (set to value > 12 for bypassing the protection)
     #define VOLT_WARN  6                 // maximum permissible current in voltage (set to value > 12 for bypassing the protection)
