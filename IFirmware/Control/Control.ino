@@ -21,7 +21,12 @@
  * You should have received a copy of the GNU General Public License					    *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.			            *
  ***********************************************************************************************************/
-
+//ROS imports
+#include <ros.h>
+#include <curio_msgs/motor.h>
+#include <std_msgs/String.h>
+#include <std_msgs/Float32.h>
+#include <curio_msgs/gain.h>
 
 #include "Conf.h"
 #include "Motor.h"
@@ -32,15 +37,12 @@
   include "CommI2C.h"
 #endif
 
-//ROS imports
-#include <ros.h>
-#include <curio_msgs/motor.h>
-#include <std_msgs/String.h>
-#include <std_msgs/Float32.h>
-
 // Global Variables
 float m1RefSpeed;
 float m2RefSpeed;
+
+//ROS node Handle
+ros::NodeHandle nh; // Arduino node
 
 //ROS message object
 curio_msgs::motor motor_speed;
@@ -54,9 +56,6 @@ std_msgs::Float32 battery_voltage;
 Motor m1(M1_PWM, M1_IN1, M1_IN2);
 Motor m2(M2_PWM, M2_IN1, M2_IN2);
 
-//ROS node Handle
-ros::NodeHandle nh; // Arduino node
-
 //ROS publishers
 ros::Publisher speed_pub("curio_speed", &motor_speed);
 ros::Publisher current_pub("curio_current", &motor_current);
@@ -65,11 +64,35 @@ ros::Publisher distance_pub("curio_distance", &motor_distance);
 ros::Publisher error_pub("curio_control_error", &error_string);
 ros::Publisher batteryVol_pub("curio_battery_voltage", &battery_voltage);
 
-//ROS Subscribers
+//Subsciber function
+void gain_callback(const curio_msgs::gain &gain_msg){
+      //do nothing
+  
+}
+//ROS Subscribers (Always make subscriber below the subscription function)
+ros::Subscriber<curio_msgs::gain> gain_sub("curio_gain", gain_callback );
 
-
+//test
+char hello[13] = "Error";
+long int timeSetup = 0;
+long int timeLoop = 0;
 
 void setup() {
+  
+  //ROS Node setup
+  nh.initNode();
+  
+  //Advertise publishers
+  nh.advertise(speed_pub);
+  nh.advertise(voltage_pub);
+  nh.advertise(current_pub);
+  nh.advertise(batteryVol_pub);
+  nh.advertise(distance_pub);
+  nh.advertise(error_pub);
+  
+  //Subscriber
+  //nh.subscribe(gain_sub);
+ 
   // DG pins pull-up
   // ---
   
@@ -98,17 +121,12 @@ void setup() {
     #endif
   #endif
   
-  //ROS Node setup
-  nh.initNode();
-  
-  //Advertise publishers
-  nh.advertise(speed_pub);
-  nh.advertise(voltage_pub);
-  nh.advertise(current_pub);
-  nh.advertise(batteryVol_pub);
+  timeSetup = micros() - timeSetup;
 }
 
 void loop() {
+  
+  timeLoop = micros() - timeLoop;
   
   // Check Battery Voltage
   float battVoltage = 0;
@@ -232,11 +250,14 @@ void loop() {
   
   battery_voltage.data = battVoltage;
   
-  //Publish messages
-  speed_pub.publish(&motor_speed);
-  voltage_pub.publish(&motor_voltage);
-  current_pub.publish(&motor_current);
-  batteryVol_pub.publish(&battery_voltage);
+  error_string.data = hello;
   
+  motor_speed.motor1 = timeSetup;
+  motor_speed.motor2 = timeLoop;
+  
+  error_pub.publish( &error_string );
+  speed_pub.publish( &motor_speed );
+  
+  nh.spinOnce();
 
 }
