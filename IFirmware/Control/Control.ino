@@ -32,58 +32,37 @@
   include "CommI2C.h"
 #endif
 
-//ROS imports
-#include <ros.h>
-#include <curio_msgs/motor.h>
-#include <std_msgs/String.h>
-#include <std_msgs/Float32.h>
 
 // Global Variables
 float m1RefSpeed;
 float m2RefSpeed;
 
-//ROS message object
-curio_msgs::motor motor_speed;
-curio_msgs::motor motor_current;
-curio_msgs::motor motor_voltage;
-curio_msgs::motor motor_distance;
-std_msgs::String error_string;
-std_msgs::Float32 battery_voltage;
-
 // Motor Instantiation
 Motor m1(M1_PWM, M1_IN1, M1_IN2);
 Motor m2(M2_PWM, M2_IN1, M2_IN2);
 
-//ROS node Handle
-ros::NodeHandle nh; // Arduino node
+// Encoder Instantiation
+Encoder e1(M1_CHA, M1_CHB);
+Encoder e2(M2_CHA, M2_CHB);
 
-//ROS publishers
-ros::Publisher speed_pub("curio_speed", &motor_speed);
-ros::Publisher current_pub("curio_current", &motor_current);
-ros::Publisher voltage_pub("curio_voltage", &motor_voltage);
-ros::Publisher distance_pub("curio_distance", &motor_distance);
-ros::Publisher error_pub("curio_control_error", &error_string);
-ros::Publisher batteryVol_pub("curio_battery_voltage", &battery_voltage);
-
-//ROS Subscribers
-
-
+#if (IS_PID_ACTIVE == true)
+  PID pid1;
+  PID pid2;
+#endif
 
 void setup() {
+  Serial.begin(57600);
+  
   // DG pins pull-up
   // ---
   
   
-  // Encoder Instantiation
-  Encoder e1(M1_CHA, M1_CHB);
-  Encoder e2(M2_CHA, M2_CHB);
   m1.myEnc = &e1;
   m2.myEnc = &e2;
   
   // PID Instantiation
   #if (IS_PID_ACTIVE == true)
-    PID pid1;
-    PID pid2;
+    
     m1.myPID = &pid1;
     m2.myPID = &pid2;    
     
@@ -98,17 +77,11 @@ void setup() {
     #endif
   #endif
   
-  //ROS Node setup
-  nh.initNode();
-  
-  //Advertise publishers
-  nh.advertise(speed_pub);
-  nh.advertise(voltage_pub);
-  nh.advertise(current_pub);
-  nh.advertise(batteryVol_pub);
 }
 
 void loop() {
+  
+  long int time = micros();
   
   // Check Battery Voltage
   float battVoltage = 0;
@@ -116,7 +89,7 @@ void loop() {
     battVoltage += analogRead(BATT_V);
   }
   battVoltage = battVoltage * ADC_RESOLUTION / BATT_ITER;
-  
+
   
   // Check Current through motors
   #if (IS_CURR_FEEDBACK == true)
@@ -215,28 +188,23 @@ void loop() {
     // CT: Conf --> Motor Voltage
     // CT: Conf --> Battery Voltage
     // Errors
-    
-    // Call an rosUpdate function for transmission.
-  motor_speed.motor1 = m1CurrSpeed;
-  motor_speed.motor2 = m2CurrSpeed;
+  
+  
+  
+  Serial.println("-----");
+  Serial.print("Batt V: "); Serial.println(battVoltage);
+  
   
   #if (IS_CURR_FEEDBACK == true)
-    motor_current.motor1 = m1Current;
-    motor_current.motor2 = m2Current;
+    Serial.print("M1 I: "); Serial.println(m1Current);
+    Serial.print("M2 I: "); Serial.println(m2Current);
   #endif
   
   #if (IS_VOLT_FEEDBACK == true)
-    motor_voltage.motor1 = m1Voltage;
-    motor_voltage.motor2 = m2Voltage;
+    Serial.print("M1 V: "); Serial.println(m1Voltage);
+    Serial.print("M2 V: "); Serial.println(m2Voltage);
   #endif
-  
-  battery_voltage.data = battVoltage;
-  
-  //Publish messages
-  speed_pub.publish(&motor_speed);
-  voltage_pub.publish(&motor_voltage);
-  current_pub.publish(&motor_current);
-  batteryVol_pub.publish(&battery_voltage);
-  
 
+  time = micros() - time;
+  Serial.print("time: "); Serial.println(time);
 }
