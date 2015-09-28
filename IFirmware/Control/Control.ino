@@ -32,14 +32,41 @@
   include "CommI2C.h"
 #endif
 
+//ROS imports
+#include <ros.h>
+#include <curio_msgs/motor.h>
+#include <std_msgs/String.h>
+#include <std_msgs/Float32.h>
 
 // Global Variables
 float m1RefSpeed;
 float m2RefSpeed;
 
+//ROS message object
+curio_msgs::motor motor_speed;
+curio_msgs::motor motor_current;
+curio_msgs::motor motor_voltage;
+curio_msgs::motor motor_distance;
+std_msgs::String error_string;
+std_msgs::Float32 battery_voltage;
+
 // Motor Instantiation
 Motor m1(M1_PWM, M1_IN1, M1_IN2);
 Motor m2(M2_PWM, M2_IN1, M2_IN2);
+
+//ROS node Handle
+ros::NodeHandle nh; // Arduino node
+
+//ROS publishers
+ros::Publisher speed_pub("curio_speed", &motor_speed);
+ros::Publisher current_pub("curio_current", &motor_current);
+ros::Publisher voltage_pub("curio_voltage", &motor_voltage);
+ros::Publisher distance_pub("curio_distance", &motor_distance);
+ros::Publisher error_pub("curio_control_error", &error_string);
+ros::Publisher batteryVol_pub("curio_battery_voltage", &battery_voltage);
+
+//ROS Subscribers
+
 
 
 void setup() {
@@ -70,7 +97,15 @@ void setup() {
       m2.myPID.Kd = CONST_M2_Kd;
     #endif
   #endif
-
+  
+  //ROS Node setup
+  nh.initNode();
+  
+  //Advertise publishers
+  nh.advertise(speed_pub);
+  nh.advertise(voltage_pub);
+  nh.advertise(current_pub);
+  nh.advertise(batteryVol_pub);
 }
 
 void loop() {
@@ -93,7 +128,7 @@ void loop() {
     }
     m1Current = m1Current * ADC_RESOLUTION / CURR_ITER * M_CS_RESO;
     m2Current = m2Current * ADC_RESOLUTION / CURR_ITER * M_CS_RESO ;
-  
+    
   #endif
   
   
@@ -181,7 +216,27 @@ void loop() {
     // CT: Conf --> Battery Voltage
     // Errors
     
-    // Call an rosUpdate function for transmission. 
-
+    // Call an rosUpdate function for transmission.
+  motor_speed.motor1 = m1CurrSpeed;
+  motor_speed.motor2 = m2CurrSpeed;
+  
+  #if (IS_CURR_FEEDBACK == true)
+    motor_current.motor1 = m1Current;
+    motor_current.motor2 = m2Current;
+  #endif
+  
+  #if (IS_VOLT_FEEDBACK == true)
+    motor_voltage.motor1 = m1Voltage;
+    motor_voltage.motor2 = m2Voltage;
+  #endif
+  
+  battery_voltage.data = battVoltage;
+  
+  //Publish messages
+  speed_pub.publish(&motor_speed);
+  voltage_pub.publish(&motor_voltage);
+  current_pub.publish(&motor_current);
+  batteryVol_pub.publish(&battery_voltage);
+  
 
 }
