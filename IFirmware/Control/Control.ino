@@ -24,6 +24,7 @@
 //ROS imports
 #include <ros.h>
 #include <curio_msgs/control_arduino.h>
+#include <curio_msgs/motor.h>
 #include <std_msgs/String.h>
 #include <curio_msgs/pid.h>
 
@@ -55,8 +56,23 @@ Motor m2(M2_PWM, M2_IN1, M2_IN2);
 ros::Publisher control_arduino_status_pub("control_arduino_status", &control_arduino_status);
 ros::Publisher error_pub("curio_control_error", &error_string);
 
+//ROS subscriber
+//Functions
+void gain_callback( const curio_msgs::gain& gain_msg){
+  digitalWrite(13, HIGH-digitalRead(13));   // blink the led
+}
+
+void speed_callback( const curio_msgs::motor& speed_msg){
+  digitalWrite(13, HIGH-digitalRead(13));   // blink the led
+}
+
+ros::Subscriber<curio_msgs::motor> speed_sub("speed_feedback", speed_callback );
+ros::Subscriber<curio_msgs::gain> gain_sub("gain_feedback", gain_callback );
+
+
+
 //test
-char hello[13] = "Error";
+char hello[51] = "ErrorErrorErrorErrorErrorErrorErrorErrorErrorError";
 long int timeSetup = 0;
 long int timeLoop = 0;
 
@@ -68,6 +84,10 @@ void setup() {
   //Advertise publishers
   nh.advertise(control_arduino_status_pub);
   nh.advertise(error_pub);
+  
+  nh.subscribe(gain_sub);
+  nh.subscribe(speed_sub);
+  
   // DG pins pull-up
   // ---
   
