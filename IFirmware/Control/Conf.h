@@ -40,11 +40,11 @@
   #define WHOAMI              99           // Address of Arduino for I2C and identity to be used for Serial communication 
                                            // (helpful in uniquely identifying this device)
 
-  #define IS_CONFIGURABLE      true      // if online configuration changes are permitted
-  #define RAW_OR_PROCESSED     true      // if return data is raw encoder reading or processed motor speed
+//  #define IS_CONFIGURABLE      true      // if online configuration changes are permitted   (******* NOT CURRENTLY IMPLEMENTED *******)
+  #define RAW_OR_PROCESSED     true      // if return data is raw encoder reading or processed motor speed (true -> processed)
   #define IS_VFDRIVE           true      // if variable frequency method is enabled (true: better performance)
-  #define IS_PID_ACTIVE        true      // if internal PID is enabled. (whether or not to engage can be configured online)
-  #define IS_ERROR_ON          true      // if error state reporting is ON/OFF
+  #define IS_PID_ACTIVE        false      // if internal PID is enabled. (whether or not to engage can be configured online)
+  #define IS_ERROR_ON          false      // if error state reporting is ON/OFF
 //  #define IS_HYBRID_SWITCH_ON  false     // if hybrid control switch enabled    (******* NOT CURRENTLY IMPLEMENTED *******)
   
   
@@ -55,25 +55,35 @@
   
   #define IS_CONST_PID         false     // if change of PID gains (online) is permitted
   #if (IS_CONST_PID == true)             // Set P, I, D constant gains in this section if dynamic setting is disabled.
-    #define CONST_Kp 1.0                 
-    #define CONST_Ki 0.0
-    #define CONST_Kd 0.0
+    #define CONST_M1_Kp 1.0                 
+    #define CONST_M1_Ki 0.0
+    #define CONST_M1_Kd 0.0
+    
+    #define CONST_M2_Kp 1.0                 
+    #define CONST_M2_Ki 0.0
+    #define CONST_M2_Kd 0.0
   #endif
   
   
   #define IS_CURR_FEEDBACK    false      // if current feedback is disabled/enabled
   #if (IS_CURR_FEEDBACK == true)         // if current feedback is taken, set the upper bound for error generation/protection
-    #define CURR_ERR   6.5   // maximum permissible current in Amps (set to value > 35 for bypassing the protection)
-    #define CURR_WARN  5.5   // maximum permissible current in Amps (set to value > 35 for bypassing the protection)
-    #define SMA_ITER   10    // size of SMA filter (don't keep it large, slows the measurement process)
+    #define CURR_ERR   6.5               // maximum permissible current in Amps (set to value > 35 for bypassing the protection)
+    #define CURR_WARN  5.5               // maximum permissible current in Amps (set to value > 35 for bypassing the protection)
+    #define CURR_ITER   10               // size of SMA filter for motor current (don't keep it large, slows the measurement process)
   #endif
   
-  #define IS_VOLT_FEEDBACK    false    // if voltage feedback is used
-  #if (IS_CURR_FEEDBACK == true)         // if current feedback is taken, set the upper bound for error generation/protection
-    #define VOLT_ERR   7     // maximum permissible current in voltage (set to value > 12 for bypassing the protection)
-    #define VOLT_WARN  6     // maximum permissible current in voltage (set to value > 12 for bypassing the protection)
-    #define SMA_ITER   10    // size of SMA filter (don't keep it large, slows the measurement process)
+  #define IS_VOLT_FEEDBACK    false      // if voltage feedback is used
+  #if (IS_VOLT_FEEDBACK == true)         // if current feedback is taken, set the upper bound for error generation/protection
+    #define VOLT_ERR   7                 // maximum permissible current in voltage (set to value > 12 for bypassing the protection)
+    #define VOLT_WARN  6                 // maximum permissible current in voltage (set to value > 12 for bypassing the protection)
+    #define VOLT_ITER   10               // size of SMA filter for motor voltage (don't keep it large, slows the measurement process)
   #endif
+  
+  #define BATT_ITER   10                 // size of SMA filter for battery voltage (don't keep it large, slows the measurement process)
+  
+  #define ADC_RESOLUTION   0.0048828     // = 5.0/1024.0
+  #define GAIN             4             // motor Current sense amplifier gain 
+  #define M_CS_RESO  (7.69231 / GAIN)    // 1 / (130m * GAIN)
   
   
   

@@ -35,20 +35,46 @@
 float m1RefSpeed;
 float m2RefSpeed;
 
+// Encoder Instantiation
+Encoder e1(M1_CHA, M1_CHB);
+Encoder e2(M2_CHA, M2_CHB);
+
 // Motor Instantiation
 Motor m1(M1_PWM, M1_IN1, M1_IN2);
 Motor m2(M2_PWM, M2_IN1, M2_IN2);
 
 
+
+/*
+  Case Structure: 
+    Check Single Motor performance on direct PWM duty application.
+    
+    1. RAW_OR_PROCESSED              false  --> pwm setting directly
+    2. IS_VFDRIVE                    true
+    3. IS_PID_ACTIVE                 false
+    4. IS_ERROR_ON                   false
+    5. IS_CONST_PID                  false
+    6. IS_CURR_FEEDBACK              false
+    7. IS_VOLT_FEEDBACK              false
+*/
+void testCase1(){
+  static long int internalTime = micros();
+  internalTime = micros() - internalTime;
+  
+  if (internalTime > 200000){
+    m1RefSpeed += 0.05;
+    m2RefSpeed += 0.05;
+  }
+}
+
+
+
 void setup() {
+  Serial.begin(57600);
   
   // DG pins pull-up
   // ---
-  
-  
-  // Encoder Instantiation
-  Encoder e1(M1_CHA, M1_CHB);
-  Encoder e2(M2_CHA, M2_CHB);
+    
   m1.myEnc = &e1;
   m2.myEnc = &e2;
   
@@ -72,7 +98,16 @@ void setup() {
   
 }
 
+
+long int time;
 void loop() {
+  // Call (Uncomment) appropriate test case.
+  testCase1();
+  
+  
+  
+  // Check Time Stamp
+  time = micros();
   
   // Check Battery Voltage
   float battVoltage = 0;
@@ -174,5 +209,19 @@ void loop() {
   
   
   // Communication
+  Serial.println("-----");
+  Serial.print("Batt V: "); Serial.println(battVoltage);
+  #if (IS_CURR_FEEDBACK == true)
+    Serial.print("M1 I: "); Serial.println(m1Current);
+    Serial.print("M2 I: "); Serial.println(m2Current);    
+  #endif
+  #if (IS_VOLT_FEEDBACK == true)
+    Serial.print("M1 V: "); Serial.println(m1Voltage);
+    Serial.print("M2 V: "); Serial.println(m2Voltage);
+  #endif
+  Serial.print("M1 refS: "); Serial.println(m1RefSpeed); Serial.print("\tM1 currS: "); Serial.println(m1CurrSpeed);
+  Serial.print("M2 refS: "); Serial.println(m2RefSpeed); Serial.print("\tM2 currS: "); Serial.println(m2CurrSpeed);
   
+  time = micros() - time;
+  Serial.print("Time: "); Serial.println(time);
 }
