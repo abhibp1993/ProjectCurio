@@ -61,9 +61,53 @@ void testCase1(){
   static long int internalTime = micros();
   internalTime = micros() - internalTime;
   
-  if (internalTime > 200000){
+  if (internalTime > 200000){    // update only after 200ms
     m1RefSpeed += 0.05;
     m2RefSpeed += 0.05;
+  }
+}
+
+/*
+  Case Structure: 
+    Check Single Motor performance on speedInRPM input.
+    
+    1. RAW_OR_PROCESSED              true  --> provide reference speed in rpm
+    2. IS_VFDRIVE                    true
+    3. IS_PID_ACTIVE                 false
+    4. IS_ERROR_ON                   false
+    5. IS_CONST_PID                  false
+    6. IS_CURR_FEEDBACK              false
+    7. IS_VOLT_FEEDBACK              false
+*/
+void testCase2(){
+  static long int internalTime = micros();
+  internalTime = micros() - internalTime;
+  
+  if (internalTime > 200000){  //update after 200ms
+    m1RefSpeed += 50;
+    m2RefSpeed += 50;
+  }
+}
+
+/*
+  Case Structure: 
+    Check Single Motor performance on speedInRPM input.
+    
+    1. RAW_OR_PROCESSED              true  --> provide reference speed in rpm
+    2. IS_VFDRIVE                    true
+    3. IS_PID_ACTIVE                 true  --> PID controller active
+    4. IS_ERROR_ON                   false
+    5. IS_CONST_PID                  true  --> for testing, use constant PID gains
+    6. IS_CURR_FEEDBACK              false
+    7. IS_VOLT_FEEDBACK              false
+*/
+void testCase3(){
+  static long int internalTime = micros();
+  internalTime = micros() - internalTime;
+  
+  if (internalTime > 200000){  //update after 200ms
+    m1RefSpeed += 50;
+    m2RefSpeed += 25;
   }
 }
 
@@ -103,7 +147,7 @@ long int time;
 void loop() {
   // Call (Uncomment) appropriate test case.
   testCase1();
-  
+  //testCase2();
   
   
   // Check Time Stamp
