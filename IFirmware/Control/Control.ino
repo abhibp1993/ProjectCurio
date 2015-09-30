@@ -163,8 +163,8 @@ void setup() {
 long int time;
 void loop() {
   // Call (Uncomment) appropriate test case.
-  testCase1();
-  //testCase2();
+  //testCase1();
+  testCase2();
   //testCase3();
   
   // Check Time Stamp
@@ -280,8 +280,8 @@ void loop() {
     Serial.print("M1 V: "); Serial.println(m1Voltage);
     Serial.print("M2 V: "); Serial.println(m2Voltage);
   #endif
-  Serial.print("M1 refS: "); Serial.println(m1RefSpeed); Serial.print("\tM1 currS: "); Serial.println(m1CurrSpeed);
-  Serial.print("M2 refS: "); Serial.println(m2RefSpeed); Serial.print("\tM2 currS: "); Serial.println(m2CurrSpeed);
+  Serial.print("M1 refS: "); Serial.print(m1RefSpeed); Serial.print("\tM1 currS: "); Serial.println(m1CurrSpeed);
+  Serial.print("M2 refS: "); Serial.print(m2RefSpeed); Serial.print("\tM2 currS: "); Serial.println(m2CurrSpeed);
   
   time = micros() - time;
   Serial.print("Time: "); Serial.println(time);
