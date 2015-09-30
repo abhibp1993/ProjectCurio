@@ -176,7 +176,7 @@ Motor::Motor(uint8_t pwm, uint8_t in1, uint8_t in2){
   
   this->refSpeed = 0;
   this->duty = 0;
-  this->direction = true;
+  this->reverse = false;
 }
 
 
@@ -215,17 +215,16 @@ Function: getDirection
 Parameters: None
 Returns: boolean. True = Clockwise, False otherwise (including stopped motor)
 Description:
-  Returns the direction of motor.
-  If encoder is enabled and working fine, then the direction is sensed value. 
-  However, if the encoder is not used, the direction is predicted from states of
-  in1, in2 pins.
+  Returns the direction of motor. 
+  (Caution: direction is determined based on in1, in2 states)
   
 Last Modified:
   1. abhibp1993: 27 Aug 2015, 2130
   2. abhibp1993: 19 Sep 2015, 1049 (ignored encoder based direction sense.)
+  3. abhibp1993: 30 Sep 2015, 1626 (minor changes)
 **********************************************************************************/
 boolean Motor::getDirection(){
-  return direction;
+  return reverse;
 }
 
 
@@ -252,16 +251,17 @@ Last Modified:
   2. abhibp1993: 11 Sep 2015, 1043 (scrap: reason -- unorganized)
   3. abhibp1993: 19 Sep 2015, 1041 (made changes in structure of motor to make life
                                     easy: -ve duty => reverse run. No rev flag. )
+  4. abhibp1993: 19 Sep 2015, 1041 (Handled all reverse, brake cases)
 **********************************************************************************/
 void Motor::setPWM(float duty){
 
   // negative duty
   if (duty < 0){
-    direction = false;
+    reverse = true;
     duty = -duty;
   }
   else{
-    direction = true;
+    reverse = false;
   }
   
   
@@ -276,6 +276,9 @@ void Motor::setPWM(float duty){
     brake = true;
     // warning ------
   }
+  else if (duty > MOTOR_LBOUND && duty < MOTOR_UBOUND){
+    start = true;
+  }
   else{
     start = false;
   }
@@ -288,19 +291,34 @@ void Motor::setPWM(float duty){
   else{ // motor is "start", so start it!
 
     // check braking
-    if (brake = true){
+    if (reverse && brake){
       digitalWrite(in1, HIGH);
       digitalWrite(in2, HIGH);
+      
       delayMicroseconds(500);      // What should be this delay? Ideally? Theoretically -> may be based on motor model. 
+      
+      digitalWrite(in1, reverse);
+      digitalWrite(in2, !reverse);
+
+      pinMode(pwm, OUTPUT);
+      analogWrite(pwm, (int)(duty * 255));
     }
-    
-    digitalWrite(in1, direction);
-    digitalWrite(in2, !direction);
-    pinMode(pwm, OUTPUT);
-    
-    analogWrite(pwm, (int)(duty * 255));
-  }
-  
+    else if (!reverse && brake){
+      digitalWrite(in1, HIGH);
+      digitalWrite(in2, HIGH);
+      return;
+    }
+    else if (!reverse && !brake){
+      digitalWrite(in1, reverse);
+      digitalWrite(in2, !reverse);
+
+      pinMode(pwm, OUTPUT);
+      analogWrite(pwm, (int)(duty * 255));
+    }
+    else{
+      // Error -----------
+    } 
+  }  
 }
 
 

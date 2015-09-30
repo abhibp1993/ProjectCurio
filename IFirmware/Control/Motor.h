@@ -45,13 +45,14 @@
       float refSpeed, duty;                                     // Speed Control Parameters
       float speed;                                              // speed: in rpm (float)
       boolean _isPID, _isEncoder;                               // Configuration Parameters
+      boolean reverse;                                          // Reverse flag. 
     
     public:                                                     // Public Variables and Methods
       Motor(uint8_t pwm, uint8_t in1, uint8_t in2);             // Instantiation method
       
       boolean start;                                            // Start/Stop the motor (true: start, false: stop)
       boolean brake;                                            // Engage brake to motor
-      boolean direction;                                        // direction: true = clockwise, false = anticlockwise
+      //boolean direction;                                        // direction: true = clockwise, false = anticlockwise
       
       Encoder* myEnc;                                           // Encoder Associated with this motor
       PID* myPID;                                               // PID Regulator associated with this motor

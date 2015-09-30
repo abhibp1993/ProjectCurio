@@ -64,6 +64,12 @@ void testCase1(){
   if (internalTime > 200000){    // update only after 200ms
     m1RefSpeed += 0.05;
     m2RefSpeed += 0.05;
+    
+    if (m1RefSpeed > 1.0) 
+      m1RefSpeed = 0.0;
+    if (m2RefSpeed > 1.0) 
+      m2RefSpeed = 0.0;
+      
   }
 }
 
@@ -86,6 +92,12 @@ void testCase2(){
   if (internalTime > 200000){  //update after 200ms
     m1RefSpeed += 50;
     m2RefSpeed += 50;
+    
+    if (m1RefSpeed > MOTOR_MAX_SPEED) 
+      m1RefSpeed = 0.0;
+    if (m2RefSpeed > MOTOR_MAX_SPEED) 
+      m2RefSpeed = 0.0;
+
   }
 }
 
@@ -108,6 +120,11 @@ void testCase3(){
   if (internalTime > 200000){  //update after 200ms
     m1RefSpeed += 50;
     m2RefSpeed += 25;
+    
+    if (m1RefSpeed > MOTOR_MAX_SPEED) 
+      m1RefSpeed = 0.0;
+    if (m2RefSpeed > MOTOR_MAX_SPEED) 
+      m2RefSpeed = 0.0;
   }
 }
 
@@ -148,7 +165,7 @@ void loop() {
   // Call (Uncomment) appropriate test case.
   testCase1();
   //testCase2();
-  
+  //testCase3();
   
   // Check Time Stamp
   time = micros();
