@@ -1,0 +1,12 @@
+Testing cases and documentation.
+
+The Arduino control accepts continuous inputs for motor speeds, and transmits back the information packet based on configuration. 
+
+To test in various cases.
+
+
+1. Select the testCase 1/2/3 function to test. 
+   Then update the conf.h file according to comment above the selected function implementation.
+   Run the code.
+
+2. Alternately, if test is to be done using manual commands, then, the speeds may be transmitted by comma separated 2 values. (FORMAT: 90.87,77.00). Remember to comment out all testcases. 

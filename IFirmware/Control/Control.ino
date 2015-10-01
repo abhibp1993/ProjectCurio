@@ -164,7 +164,7 @@ long int time;
 void loop() {
   // Call (Uncomment) appropriate test case.
   //testCase1();
-  testCase2();
+  //testCase2();
   //testCase3();
   
   // Check Time Stamp
@@ -285,4 +285,12 @@ void loop() {
   
   time = micros() - time;
   Serial.print("Time: "); Serial.println(time);
+  
+  if (Serial.available() > 1){
+    m1RefSpeed = Serial.parseFloat();
+    m2RefSpeed = Serial.parseFloat();
+    Serial.println("ACK");
+    delay(20);
+  }
+  
 }
