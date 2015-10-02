@@ -137,7 +137,9 @@ void setup() {
   // ---
     
   m1.myEnc = &e1;
+  m1._isEncoder = true;
   m2.myEnc = &e2;
+  m2._isEncoder = true;
   
   // PID Instantiation
   #if (IS_PID_ACTIVE == true)

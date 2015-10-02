@@ -200,9 +200,11 @@ float Motor::getSpeed(){
   
   if (this->_isEncoder){
     long int count = this->myEnc->getCountsAndReset();
+//    Serial.print("---GS:ENC---"); Serial.println(count);
     this->speed = (count/1636.8) * (1000 / _now) * 60; 
   }
   else{
+    Serial.println("---GS:ELSE---");
     this->speed = MOTOR_MAX_SPEED * this->duty;
   }
   
@@ -255,6 +257,8 @@ Last Modified:
 **********************************************************************************/
 void Motor::setPWM(float duty){
 
+  this->duty = duty;
+  
   // negative duty
   if (duty < 0){
     reverse = true;
@@ -268,6 +272,7 @@ void Motor::setPWM(float duty){
   // Clip duty
   if (duty > MOTOR_UBOUND){
     start = true;
+    brake = false;
     duty = MOTOR_UBOUND;
     // warning ------
   }
@@ -278,11 +283,14 @@ void Motor::setPWM(float duty){
   }
   else if (duty > MOTOR_LBOUND && duty < MOTOR_UBOUND){
     start = true;
+    brake = false;
   }
   else{
     start = false;
   }
   
+  //Debug statement
+  //Serial.print("State: "); Serial.print(start); Serial.print(","); Serial.print(brake); Serial.print(","); Serial.println(reverse);
   
   // If motor is "stop", then disconnect
   if (start = false){
@@ -308,7 +316,7 @@ void Motor::setPWM(float duty){
       digitalWrite(in2, HIGH);
       return;
     }
-    else if (!reverse && !brake){
+    else if (!brake){ //(!reverse && !brake){
       digitalWrite(in1, reverse);
       digitalWrite(in2, !reverse);
 
@@ -343,7 +351,7 @@ void Motor::setSpeed(float rpm){
     this->myPID->update(rpm, speed);    // what about direction reversal?? Does it need to be separately handled?
   }
   else{
-    this->setPWM(float(rpm) / MOTOR_MAX_SPEED);
+    this->setPWM(((float)(rpm) / MOTOR_MAX_SPEED));
   }
 }
 
