@@ -13,7 +13,7 @@ class Pose(object):
     def __init__(self, x = None, y = None, theta = None):
         self.x = x
         self.y = y
-        self._theta = np.deg2rad(theta)
+        #self._theta = np.deg2rad(theta)
      
     @property 
     def thetaIn0To2Pi(self):

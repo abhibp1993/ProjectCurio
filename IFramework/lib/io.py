@@ -13,7 +13,7 @@ import numpy as np
 
 # Common Configurable Variables
 wheelBase = 0.15    #in meter
-wheelRadius = 0.09  #in meter
+wheelRadius = 0.07  #in meter
 
 #ULTRASONIC_RANGE_BOUND = 200    #in cm     --> Should come from some config file.
 
@@ -95,16 +95,28 @@ class SensorInput(object):
     
     
 class Action(object):
+#    MINRPM = 25
+    
     def __init__(self, fvel = 0.0, rvel = 0.0):
-        self.fvel = fvel
-        self.rvel = rvel
+        self.fvel = fvel * 60   #stored as meter/minute as finally we need rpm
+        self.rvel = rvel * 60   #stored as meter/minute as finally we need rpm
 
     def transformToLowLevelCmd(self):
-        self.vr = (2 * self.fvel + self.rvel * wheelBase)/(2 * wheelRadius)
-        self.vl = (2 * self.fvel - self.rvel * wheelBase)/(2 * wheelRadius)
+        self.wr = (2 * self.fvel + self.rvel * wheelBase)/(2 * wheelRadius)  
+        self.wl = (2 * self.fvel - self.rvel * wheelBase)/(2 * wheelRadius)  
+        
+#        # Protection: For testing
+#        if self.wr < self.MINRPM or self.wl < self.MINRPM:
+#            self.wl = 0
+#            self.wr = 0
+#            print 'Warning: Too slow to run.'
+            
+        return [round(self.wl, 4), round(self.wr, 4)]
         
     def rosmessagize(self):
-        # make use of vr, vl. 
+        # make use of wr, wl. 
         # if they are not defined, raise error/call the transformToLowLevelCmd method
         raise NotImplementedError('ROS Messages not yet finalized here @ io.Action.')
         
+    def __str__(self):
+        return str([self.fvel, self.rvel])        

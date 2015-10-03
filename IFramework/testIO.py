@@ -8,10 +8,23 @@ Created on Mon Sep 21 23:41:51 2015
 import lib.util as util
 import lib.io as io
 
-a = io.SensorInput()
-p = util.Pose(10, 90, 270)
-print 'Pose: ', p
-print 'theta: ', p.theta
-print 'theta 0-2pi: ', p.thetaIn0To2Pi
-print 'theta -pi-pi: ', p.thetaInMinusPiToPi
-print 'theta degree: ', p.thetaInDegrees
+
+def testPose():    
+    p = util.Pose(10, 90, 270)
+    print 'Pose: ', p
+    print 'theta: ', p.theta
+    print 'theta 0-2pi: ', p.thetaIn0To2Pi
+    print 'theta -pi-pi: ', p.thetaInMinusPiToPi
+    print 'theta degree: ', p.thetaInDegrees
+
+
+def testAction():
+    #import random
+    a = io.Action(0.03, 0.00)
+    print 'Action'
+    print a
+    print a.transformToLowLevelCmd()
+    
+
+if __name__ == '__main__':
+    testAction()
