@@ -23,13 +23,10 @@
  ***********************************************************************************************************/
  
  
- #include "Motor.h"
- #include "PinConfig.h"
- 
- //Motor m1(M1_PWM, M1_IN1, M1_IN2);
- //Motor m2(M2_PWM, M2_IN1, M2_IN2);
+#include "Motor.h"
+#include "PinConfig.h"
   
-  
+
   
 //==========================================================================================================
 // Helper Functions 
@@ -568,21 +565,34 @@ void Encoder::enableInterrupts(){
 // How to resolve this issue --> PLEASE THINK!!
 ISR(PCINT0_vect)
 {
-//  uint8_t valA = digitalRead(pinA);
-//  uint8_t valB = digitalRead(pinB);
-//  
-//  uint8_t plus  = valA ^ lastValB;
-//  uint8_t minus = valB ^ lastValA;
-//  
-//  if (plus)    { counts++; }
-//  if (minus)   { counts--; }
-//  
-//  if (valA != lastValA && valB != lastValB){
-//    errors = 1;
-//    
-//  lastValA = valA;
-//  lastValB = valB;
   
+  // Read current status of encoder channels
+  uint8_t m1_valA = digitalRead(m1.myEnc->pinA);
+  uint8_t m1_valB = digitalRead(m1.myEnc->pinB);
+  uint8_t m2_valA = digitalRead(m2.myEnc->pinA);
+  uint8_t m2_valB = digitalRead(m2.myEnc->pinB);
+  
+  // Find where the transition took place
+  uint8_t m1_plus  = m1_valA ^ m1.myEnc->lastValA;
+  uint8_t m1_minus = m1_valB ^ m1.myEnc->lastValB;
+  uint8_t m2_plus  = m2_valA ^ m2.myEnc->lastValA;
+  uint8_t m2_minus = m2_valB ^ m2.myEnc->lastValB;
+  
+  // Update respective count
+  if (m1_plus)  {m1.myEnc->counts++;}
+  if (m1_minus) {m1.myEnc->counts--;}
+  if (m2_plus)  {m2.myEnc->counts++;}
+  if (m2_minus) {m2.myEnc->counts--;}
+  
+  // Update errors
+  if (m1_valA != m1.myEnc->lastValA && m1_valB != m1.myEnc->lastValB) {m1.myEnc->errors = 1;}
+  if (m2_valA != m2.myEnc->lastValA && m2_valB != m2.myEnc->lastValB) {m2.myEnc->errors = 1;}
+  
+  m1.myEnc->lastValA = m1_valA;
+  m1.myEnc->lastValB = m1_valB;
+  m2.myEnc->lastValA = m2_valA;
+  m2.myEnc->lastValB = m2_valB;
+   
 }
 
 ISR(PCINT1_vect, ISR_ALIASOF(PCINT0_vect));

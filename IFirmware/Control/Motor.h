@@ -81,16 +81,15 @@
   class Encoder{
     
     private:
-      uint8_t pinA, pinB;                                       // Pins to which channels are connected
-      long int counts;                                          // counts store
-      uint8_t errors;                                           // error store
-      
-      uint8_t lastValA;                                         // logic levels on channel A
-      uint8_t lastValB;                                         // logic levels on channel B
-      
       void enableInterrupts();                                  // Enable the PCINT interrupt on selected pins.
     
     public:
+      uint8_t pinA, pinB;                                       // Pins to which channels are connected
+      uint8_t lastValA;                                         // logic levels on channel A
+      uint8_t lastValB;                                         // logic levels on channel B
+      long int counts;                                          // counts store
+      uint8_t errors;                                           // error store
+            
       Encoder(uint8_t chA, uint8_t chB);                        // Instantiation (255 or -1 indicates not set or used)
       
       long int getCounts();                                     // returns the counts since last reset.
