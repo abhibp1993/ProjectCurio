@@ -20,10 +20,11 @@ def testPose():
 
 def testAction():
     #import random
-    a = io.Action(0.03, 0.00)
+    a = io.Action(0.00, 1.00)
     print 'Action'
     print a
-    print a.transformToLowLevelCmd()
+    ret = a.transformToLowLevelCmd()
+    print str('omega_L = ' + str(ret[0]) + ' rad/s' + ', omega_R = ' + str(ret[1]) + ' rad/s') 
     
 
 if __name__ == '__main__':

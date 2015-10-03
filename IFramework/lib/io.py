@@ -98,12 +98,12 @@ class Action(object):
 #    MINRPM = 25
     
     def __init__(self, fvel = 0.0, rvel = 0.0):
-        self.fvel = fvel * 60   #stored as meter/minute as finally we need rpm
-        self.rvel = rvel * 60   #stored as meter/minute as finally we need rpm
+        self.fvel = fvel       
+        self.rvel = rvel  
 
     def transformToLowLevelCmd(self):
-        self.wr = (2 * self.fvel + self.rvel * wheelBase)/(2 * wheelRadius)  
-        self.wl = (2 * self.fvel - self.rvel * wheelBase)/(2 * wheelRadius)  
+        self.wr = (2 * self.fvel * 60 + self.rvel * wheelBase)/(2 * wheelRadius)  
+        self.wl = (2 * self.fvel * 60 - self.rvel * wheelBase)/(2 * wheelRadius)  
         
 #        # Protection: For testing
 #        if self.wr < self.MINRPM or self.wl < self.MINRPM:
@@ -119,4 +119,5 @@ class Action(object):
         raise NotImplementedError('ROS Messages not yet finalized here @ io.Action.')
         
     def __str__(self):
-        return str([self.fvel, self.rvel])        
+        return str('v = ' + str(self.fvel) + ' m/s' + \
+        ', omega = ' + str(self.rvel) + ' rad/s')        
