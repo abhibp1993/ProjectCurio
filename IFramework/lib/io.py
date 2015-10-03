@@ -18,6 +18,24 @@ wheelRadius = 0.07  #in meter
 #ULTRASONIC_RANGE_BOUND = 200    #in cm     --> Should come from some config file.
 
 
+class State(object):
+    """
+    Represents all internal and external observable state variables for Curio.
+    """
+    odom    = None
+    vel     = None
+    acc     = None
+    jerk    = None
+    sonar   = None
+    irprox  = None
+    pitch   = None
+    roll    = None
+    battVolt    = None
+    motorFail   = [False, False]        # [motor1, motor2]
+    firmwareCommOK  = [True, True]      # [Arduino1, Arduino2]
+    baseStationOK   = 0                 # number of base stations connected
+    
+
 
 class SensorInput(object):
     """
@@ -25,69 +43,52 @@ class SensorInput(object):
     The class will hold partially pre-preocessed data.
     
     Variables:
-        - pose: Current state pose (instance of IFramework.lib.util.Pose class)
+        - odom: util.Pose instance: (x, y, theta)
+        - vel: 3-list: (v_x, v_y, omega)
+        - acc: 3-list: (a_x, a_y, alpha)
+        - jerk: 3-list: (j_x, j_y, zeta)
         - sonar: values of each sonar in meters (list of size 5)
         - irprox: values of each ir-proximity sensor (list of size 8)
-        - imu: latest reading of RPY angles, accel XYZ. (instance of IFramework.lib.io.SensorInput.IMU class)
-        - state: Complete state of Robot. (Instance of IFramework.lib.io.SensorInput.CurioState class)
+        - extension: yet to be decided.
         
-    """
-    class IMU(object):
-        def __init__(self, rpy = list(), accel = list()):
-            self.rpy = rpy
-            self.accel = accel
+    """           
     
-    
-    class State(object):
-        def __init__(self):
-            self.x = 0.0
-            self.velx = 0.0
-            self.accx = 0.0
-            self.jerx = 0.0
-            self.y = 0.0
-            self.vely = 0.0
-            self.accy = 0.0
-            self.jery = 0.0
-            self.theta = 0.0
-            self.omega = 0.0
-            self.alpha = 0.0
-            self.jert = 0.0
-            self.pitch = 0.0
-            self.roll = 0.0
-            self.timestamp = 0
-            
-    
-
-    def __init__(self, pose = util.Pose(), sonar = list(), irprox = list(), imu = IMU(), state = State()):
-        self.pose = pose
+    def __init__(self, pose = util.Pose(), vel = list(), acc = list(), jerk = (), sonar = list(), irprox = list()):
+        self.odom = pose
+        self.vel = vel
+        self.acc = acc
+        self.jerk = jerk
         self.sonar = sonar
         self.irprox = irprox
-        self.imu = imu
-        self.state = state
     
     @property
     def odometry(self):
-        return self.pose
+        return self.odom
     
-    @property
-    def rpy(self):
-        return self.imu.rpy
-        
     @property
     def position(self):
         return np.array([self.state.x, self.state.y])
     
     @property
-    def velocity(self):
-        return np.array([self.state.velx, self.state.vely])
-        
+    def vel(self):
+        return self.vel
+    
     @property
-    def acceleration(self):
-        return np.array([self.state.accx, self.state.accy])
+    def acc(self):
+        return self.acc
         
     @property
     def jerk(self):
-        return np.array([self.state.jerx, self.state.jery])
+        return self.jerk
+        
+    @property
+    def sonar(self):
+        return self.sonar
+        
+    @property
+    def irprox(self):
+        return self.irprox
+
 
     def rosmessagize(self):
         raise NotImplementedError('ROS Messages not yet finalized here @ io.SensorInput.')
@@ -95,13 +96,30 @@ class SensorInput(object):
     
     
 class Action(object):
+    """
+    An abstraction layer to interface higher level control commands to firmware level
+    control algorithms.
+    """
 #    MINRPM = 25
     
     def __init__(self, fvel = 0.0, rvel = 0.0):
+        """
+        Constructor.
+        
+        @fvel: forward velocity (in m/s)
+        @rvel: angular velocity of robot w.r.t. it's center (in rad/s)
+        """
         self.fvel = fvel       
         self.rvel = rvel  
 
+
     def transformToLowLevelCmd(self):
+        """
+        Converts the high level (v, w) to left and right motor angular velocities, 
+        in rpm. 
+        
+        @returns: list of left and right rpms respectively.
+        """
         self.wr = (2 * self.fvel * 60 + self.rvel * wheelBase)/(2 * wheelRadius)  
         self.wl = (2 * self.fvel * 60 - self.rvel * wheelBase)/(2 * wheelRadius)  
         
@@ -113,11 +131,14 @@ class Action(object):
             
         return [round(self.wl, 4), round(self.wr, 4)]
         
+        
     def rosmessagize(self):
+        """
+        Generates the action data in frame format as required by ROS. 
+        """
         # make use of wr, wl. 
         # if they are not defined, raise error/call the transformToLowLevelCmd method
         raise NotImplementedError('ROS Messages not yet finalized here @ io.Action.')
         
     def __str__(self):
-        return str('v = ' + str(self.fvel) + ' m/s' + \
-        ', omega = ' + str(self.rvel) + ' rad/s')        
+        return str('v = ' + str(self.fvel) + ' m/s' + ', omega = ' + str(self.rvel) + ' rad/s')
