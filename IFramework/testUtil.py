@@ -6,7 +6,7 @@ Created on Mon Oct  5 13:04:26 2015
 """
 
 import math
-import lib.util1 as util
+import lib.util as util
 
 
 def test_Point2D(pSet):
@@ -179,7 +179,7 @@ def test_Vector2D(vSet):
     p3 = util.Point2D(1, 1)
     p4 = util.Point2D(10, 10)
     v1 = util.Vector2D(p1, p2)
-    v2 = util.Vector2taD(p3, p4)
+    v2 = util.Vector2D(p3, p4)
     print p1, p2, p3, p4, v1.intersect(v2)    
     
 
@@ -289,6 +289,6 @@ def run_Pose():
     
     
 if __name__ == '__main__':
-    #run_Point2D()
-    #run_Vector2D()
+    run_Point2D()
+    run_Vector2D()
     run_Pose()
