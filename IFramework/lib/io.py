@@ -33,8 +33,10 @@ class State(object):
     battVolt    = None
     motorFail   = [False, False]        # [motor1, motor2]
     firmwareCommOK  = [True, True]      # [Arduino1, Arduino2]
-    baseStationOK   = 0                 # number of base stations connected
-    
+    baseStation     = 0                 # number of base stations connected
+
+    def rosmessagize(self):
+        raise NotImplementedError('State: ROS Message not yet decided.')
 
 
 class SensorInput(object):
@@ -53,42 +55,41 @@ class SensorInput(object):
         
     """           
     
-    def __init__(self, pose = util.Pose(), vel = list(), acc = list(), jerk = (), sonar = list(), irprox = list()):
-        self.odom = pose
-        self.vel = vel
-        self.acc = acc
-        self.jerk = jerk
-        self.sonar = sonar
-        self.irprox = irprox
+    def __init__(self, pose = util.Pose(), vel = list(), acc = list(), jerk = list(), sonar = list(), irprox = list()):
+        self._odom = pose
+        self._vel = vel
+        self._acc = acc
+        self._jerk = jerk
+        self._sonar = sonar
+        self._irprox = irprox
     
     @property
-    def odometry(self):
-        return self.odom
+    def odom(self):
+        return self._odom
     
     @property
     def position(self):
-        return np.array([self.state.x, self.state.y])
+        return np.array([self.odom.x, self.odom.y])
     
     @property
     def vel(self):
-        return self.vel
+        return self._vel
     
     @property
     def acc(self):
-        return self.acc
+        return self._acc
         
     @property
     def jerk(self):
-        return self.jerk
+        return self._jerk
         
     @property
     def sonar(self):
-        return self.sonar
+        return self._sonar
         
     @property
     def irprox(self):
-        return self.irprox
-
+        return self._irprox
 
     def rosmessagize(self):
         raise NotImplementedError('ROS Messages not yet finalized here @ io.SensorInput.')

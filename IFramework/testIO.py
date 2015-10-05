@@ -26,6 +26,16 @@ def testAction():
     ret = a.transformToLowLevelCmd()
     print str('omega_L = ' + str(ret[0]) + ' rad/s' + ', omega_R = ' + str(ret[1]) + ' rad/s') 
     
+def testSInput():
+    si = io.SensorInput()
+    print 'odometry: ', si.odom
+    print 'velocity: ', si.vel
+    print 'acceleration: ', si.acc
+    print 'jerk: ', si.jerk
+    
+    
+    
 
 if __name__ == '__main__':
-    testAction()
+    #testAction()
+    testSInput()
