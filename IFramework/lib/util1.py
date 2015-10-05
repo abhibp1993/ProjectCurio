@@ -17,7 +17,7 @@ import numpy as np
 FLOAT_PRECISION = 4     # No. of Decimal Places
 
 
-print 'importing util...'
+print 'importing util modified...'
 
 
 
@@ -48,7 +48,7 @@ class Point2D(object):
     @property
     def positionVector(self):
         """ Returns a position vector to the self-point. """
-        return Vector2D(Point2D(), self)
+        return Vector2D(ORIGIN, self)
     
     def toList(self):
         """ Return [x, y] list """
@@ -82,11 +82,11 @@ class Point2D(object):
         @point: Point2D instance 
         """
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
-        return self.positionVector.arg - point.positionVector.arg
+        return (math.atan2(point.y - self.y, point.x - self.x) % (2*math.pi))
     
     def __eq__(self, point):
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
-        return (self.x == point.x and self.y == point.y)
+        return self.isNear(point)
     
     def __add__(self, point):
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
@@ -100,6 +100,8 @@ class Point2D(object):
         return 'P(' + str(self.x) + ', ' + str(self.y) + ')'
         
 ORIGIN = Point2D()
+
+
 
 class Vector2D(object):
     def __init__(self, p1 = None, p2 = None, r=None, theta=None):
