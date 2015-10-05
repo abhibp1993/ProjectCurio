@@ -104,6 +104,11 @@ ORIGIN = Point2D()
 
 
 class Vector2D(object):
+    EPS = 1e-02
+    _CCW = 'ccw'
+    _CW = 'cw'
+    _COLLINEAR = 'collinear'
+    
     def __init__(self, p1 = None, p2 = None, r=None, theta=None):
         """
         Constructor. 
@@ -153,7 +158,7 @@ class Vector2D(object):
     
     def normalize(self):
         """ Normalizes self-vector """
-        self.r = 1
+        self.mag = 1.0
         self.p2 = Point2D(self.p1.x + math.cos(self.arg), self.p1.y + math.sin(self.arg))
     
     def intersect(self, vec):
@@ -164,7 +169,20 @@ class Vector2D(object):
         @vec: Vector2D instance
         """
         assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
-        raise NotImplementedError
+        
+        #orientations
+        o1 = self.turn(vec.p1)
+        o2 = self.turn(vec.p2)
+        o3 = vec.turn(self.p1)
+        o4 = vec.turn(self.p2)
+        
+        if (o1 != o2 and o3 != o4): return True
+        if (o1 == Vector2D._COLLINEAR and (vec.p1 in self)): return True
+        if (o2 == Vector2D._COLLINEAR and (vec.p2 in self)): return True
+        if (o3 == Vector2D._COLLINEAR and (self.p1 in vec)): return True
+        if (o4 == Vector2D._COLLINEAR and (self.p2 in vec)): return True
+        
+        return False
         
     def getIntersection(self, vec):
         """
@@ -174,7 +192,24 @@ class Vector2D(object):
         assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
         raise NotImplementedError
         
-    def isccw(self, point, eps = 1e-02):
+    def turn(self, point, eps = EPS):
+        """
+        Computes the orientation of point w.r.t. the vector.
+        
+        @point: Point2D instance
+        @returns: {'ccw', 'cw', 'collinear'}
+        """
+        assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
+        
+        lhs = (point.y - self.p1.y)*(self.p2.x - self.p1.x)
+        rhs = (self.p2.y - self.p1.y)*(point.x - self.p1.x)
+        
+        if ((lhs > rhs) and (not (abs(lhs - rhs) < eps))):   return Vector2D._CCW
+        elif ((lhs < rhs) and (not (abs(lhs - rhs) < eps))): return Vector2D._CW
+        elif abs(lhs - rhs) < eps:                           return Vector2D._COLLINEAR
+            
+    
+    def isccw(self, point, eps = EPS):
         """
         Returns if the point is counter clockwise turn w.r.t. self.        
         
@@ -185,12 +220,9 @@ class Vector2D(object):
             close to vector, then it lies on the vector, hence ccw turn has no meaning.
         """
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
+        return self.turn(point) == Vector2D._CCW
         
-        lhs = (point.y - self.p1.y)*(self.p2.x - self.p2.x)
-        rhs = (self.p2.y - self.p1.y)*(point.x - self.p2.x)
-        return  ((lhs > rhs) and (not (lhs - rhs) < eps))
-        
-    def iscw(self, point, eps = 1e-02):
+    def iscw(self, point, eps = EPS):
         """
         Returns if the point is clockwise turn w.r.t. self.        
         
@@ -201,13 +233,10 @@ class Vector2D(object):
             close to vector, then it lies on the vector, hence cw turn has no meaning.
         """
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
-        
-        lhs = (point.y - self.p1.y)*(self.p2.x - self.p2.x)
-        rhs = (self.p2.y - self.p1.y)*(point.x - self.p2.x)
-        return  ((lhs < rhs) and (not (lhs - rhs) < eps))
+        return self.turn(point) == Vector2D._CW
 
     
-    def on(self, point, eps = 1e-02):
+    def collinear(self, point, eps = EPS):
         """
         Returns if the point is on the self-vector.
         
@@ -218,10 +247,7 @@ class Vector2D(object):
             close to vector, then it lies on the vector.
         """
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
-        
-        lhs = (point.y - self.p1.y)*(self.p2.x - self.p2.x)
-        rhs = (self.p2.y - self.p1.y)*(point.x - self.p2.x)
-        return (lhs - rhs) < eps
+        return self.turn(point) == Vector2D._COLLINEAR
     
     def dot(self, vec):
         """
@@ -256,22 +282,12 @@ class Vector2D(object):
         return Vector2D(p1=self.p2, p2=self.p1)
         
     def __add__(self, vec):
-        assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
-        
-        tempVec = vec
-        if vec.p1 != self.p2:
-            tempVec = vec - (vec.p2.positionVector - self.p2.positionVector)
-        
-        return Vector2D(p1=self.p1, p2=Point2D(self.p2.x + tempVec.x, self.p2.y + tempVec.y))
+        assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'        
+        return Vector2D(p1=self.p1, p2=Point2D(self.p2.x + vec.x, self.p2.y + vec.y))
     
     def __sub__(self, vec):
         assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
-        
-        tempVec = vec
-        if vec.p1 != self.p2:
-            tempVec = vec - (vec.p2.positionVector - self.p2.positionVector)
-        
-        return Vector2D(p1=self.p1, p2=Point2D(self.p2.x - tempVec.x, self.p2.y - tempVec.y))
+        return Vector2D(p1=self.p1, p2=Point2D(self.p2.x - vec.x, self.p2.y - vec.y))
     
     def __mul__(self, vec):
         """
@@ -301,10 +317,15 @@ class Vector2D(object):
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
         return self.iscw(point)
 
-    def __contains__(self, vec):
-        assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
-        raise NotImplementedError
-        
+    def __contains__(self, point):
+        """ Checks if point lies on the vector. (Not just collinearity) """
+        assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
+        return (self.collinear(point) and \
+                point.x <= max(self.p1.x + Vector2D.EPS, self.p2.x + Vector2D.EPS, self.p1.x - Vector2D.EPS, self.p2.x - Vector2D.EPS) and \
+                point.x >= min(self.p1.x + Vector2D.EPS, self.p2.x + Vector2D.EPS, self.p1.x - Vector2D.EPS, self.p2.x - Vector2D.EPS) and \
+                point.y <= max(self.p1.y + Vector2D.EPS, self.p2.y + Vector2D.EPS, self.p1.y - Vector2D.EPS, self.p2.y - Vector2D.EPS) and \
+                point.y >= min(self.p1.y + Vector2D.EPS, self.p2.y + Vector2D.EPS, self.p1.y - Vector2D.EPS, self.p2.y - Vector2D.EPS))
+                
     def __str__(self):
         return 'V[' + str(self.p1) + ', ' + str(self.p2) + ']'
 
