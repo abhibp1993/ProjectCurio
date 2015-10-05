@@ -133,6 +133,10 @@ class Vector2D(object):
             self.arg = theta
             self.p2 = Point2D(p1.x + r*math.cos(theta), p1.y + r*math.sin(theta))
         else:
+            self.p1 = ORIGIN
+            self.p2 = ORIGIN
+            self.mag = 0
+            self.arg = 0
             raise AttributeError('Vector cannot be instantiated. See documentation for valid arguments.')
         
     @property
@@ -334,9 +338,106 @@ zeroVector = Vector2D(Point2D(), Point2D())
 
 
 class Pose(object):
-    pass
+    """
+    Represents the Pose of the robot - (x, y, theta)
+    """
+    _EPS_DIST = 1e-02
+    _EPS_ANGLE = 1e-02
+    
+    def __init__(self, x=None, y=None, theta=0.0, point=None):
+        """
+        Constructor.
+        Instantiation can be done in two ways - 
+            1. (x, y, theta)
+            2. (point, theta)
+        """        
+        if isinstance(x, (float, int)) and isinstance(y, (float, int)) and point == None:
+            self.npPose = np.array([[x], [y], [theta]])
+        elif isinstance(point, Point2D) and x == None and y == None:
+            self.npPose = np.array([[point.x], [point.y], [theta]])
+        else:
+            self.npPose = np.array([[0], [0], [0]])
+            raise AttributeError('Instantiation of Pose failed. Check documentation for valid inputs')
 
+    @property
+    def x(self):
+        """ returns x coordinate of pose """
+        return self.npPose[0][0]
 
+    @property
+    def y(self):
+        """ returns y coordinate of pose """
+        return self.npPose[1][0]
+
+    @property
+    def theta(self):
+        """ returns heading angle of pose """
+        return self.npPose[2][0]
+        
+    @property
+    def point(self):
+        """ returns position represented by the Pose. """
+        return Point2D(x=self.x, y=self.y)
+    
+    @property
+    def transform(self):
+        """ Returns the transformation corresponding to Pose """
+        T = Transform()
+        T.translate = Vector2D(ORIGIN, Point2D(x=self.x, y=self.y))
+        T.rotate = self.theta
+        return T
+        
+
+    def applyTransform(self, T):
+        """ 
+        Applies transformation T to self-Pose 
+        @T: util.Transform instance.
+        """
+        assert isinstance(T, Transform), 'T must be an instance of util.Transform'
+        self.npPose = (T * self).npPose
+        
+    def distance(self, pose):
+        """ 
+        Computes euclidean distance between self and pose 
+        @pose: util.Pose instance
+        """
+        assert isinstance(pose, Pose), 'pose must be instance of Pose.'
+        return np.linalg.norm(self.npPose[0:2] - pose.npPose[0:2])
+    
+    def isNear(self, pose, distEps = _EPS_DIST, angleEps = _EPS_ANGLE):
+        """
+        Computes if the pose is close to self.
+        @pose: util.Pose instance
+        """
+        assert isinstance(pose, Pose), 'pose must be instance of Pose.'
+        return ( self.distance(pose) < distEps) and abs(self.theta - pose.theta) < angleEps
+        
+    def toList(self):
+        """ Returns Pose as a 3-list: [x, y, theta] """
+        return self.npPose.transpose().tolist()[0]
+        
+    def toTuple(self):
+        """ Returns Pose as a 3-tuple: (x, y, theta) """
+        return tuple(self.npPose.transpose().tolist()[0])
+
+    def __add__(self, pose):
+        """ Adds self and pose """
+        assert isinstance(pose, Pose), 'pose must be instance of Pose.'
+        return Pose(x=self.x+pose.x, \
+                    y=self.y+pose.y, \
+                    theta=(self.theta+pose.theta)%(2*math.pi))
+    
+    def __sub__(self, pose):
+        """ Subtracts self and pose """
+        assert isinstance(pose, Pose), 'pose must be instance of Pose.'
+        return Pose(x=self.x-pose.x, \
+                    y=self.y-pose.y, \
+                    theta=(self.theta-pose.theta)%(2*math.pi))
+
+    def __str__(self):
+        return 'Pose(' + str(self.x) + ', ' + str(self.y) + ', ' + str(math.degrees(self.theta)) + ')'
+        
+        
 
 class Transform(object):
     """
@@ -359,12 +460,13 @@ class Transform(object):
         
     def _applyToPoint(self, point):
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
-        p = self.transformMatrix.dot(point.npPoint)
+        p = self.transformMatrix.dot(point.npPose)
         return Point2D(x=p[0][0], y=p[1][0])
     
     def _applyToPose(self, pose):
         assert isinstance(pose, Pose), 'pose must be instance of util.Pose'
-        p = self.transformMatrix.dot(pose.npPoint)
+        homogenousPose = np.array([[pose.x], [pose.y], [1]])
+        p = self.transformMatrix.dot(homogenousPose)
         return Pose(x=p[0][0], y=p[1][0], theta=(pose.theta+self.rotate)%(2*math.pi))
         
     def _applyToVector(self, vec):
@@ -389,4 +491,5 @@ class Transform(object):
         elif    isinstance(obj, tuple):     return (self*o for o in obj)
         else: raise AttributeError('Transform cannot be applied on ' + str(type(obj)))
             
-            
+    def __str__(self):
+        return 'translate: ' + str(self.translate) + ' rotate: ' + str(self.rotate)

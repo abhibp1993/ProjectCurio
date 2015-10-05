@@ -179,8 +179,60 @@ def test_Vector2D(vSet):
     p3 = util.Point2D(1, 1)
     p4 = util.Point2D(10, 10)
     v1 = util.Vector2D(p1, p2)
-    v2 = util.Vector2D(p3, p4)
+    v2 = util.Vector2taD(p3, p4)
     print p1, p2, p3, p4, v1.intersect(v2)    
+    
+
+def test_Pose(poseSet):
+    """
+    @poseSet: list of util.Pose instances
+    """
+    testCounter = 0
+    
+    
+    print '------------------------------------'
+    print 'Properties testing...'
+    testCounter = 0
+    for p in poseSet:
+        testCounter += 1
+        print 'Test %d'%testCounter
+        print p
+        print '\tx, y, t: ', p.x, p.y, p.theta
+        print '\tpoint: ', p.point
+        print '\tList: ', p.toList()
+        print '\tTuple: ', p.toTuple()
+        print '\tMatrix: ', p.transform.transformMatrix
+
+    print '------------------------------------'
+    print 'Distance, isNear...'
+    testCounter = 0
+    for i in range(len(poseSet)):
+        testCounter += 1
+        print 'Test %d'%testCounter
+        print poseSet[i], poseSet[(i+1)%len(poseSet)]
+        print '\tDist: ', poseSet[i].distance(poseSet[(i+1)%len(poseSet)])
+        print '\tNear: ', poseSet[i].isNear(poseSet[(i+1)%len(poseSet)])
+        print '\tAdd: ', poseSet[i] + poseSet[(i+1)%len(poseSet)]
+        print '\tSub: ', poseSet[i] - poseSet[(i+1)%len(poseSet)]
+
+
+    print '------------------------------------'
+    print 'Transformation...'
+    
+    T1 = util.Transform(translate=util.Vector2D(p1=util.ORIGIN, p2=util.Point2D(1, 1)))
+    T2 = util.Transform(translate=util.Vector2D(p1=util.ORIGIN, p2=util.Point2D(-1, 1)))
+    print 'Applying T1: ', T1    
+    print 'Applying T2: ', T2
+    
+    testCounter = 0
+    for p in poseSet:
+        testCounter += 1
+        print 'Test %d'%testCounter
+        print 'old: ', p
+        p.applyTransform(T1)
+        print '\tnew 1: ', p
+        p.applyTransform(T2)
+        print '\tnew 2: ', p
     
     
 def run_Point2D():
@@ -224,6 +276,19 @@ def run_Vector2D():
     
     test_Vector2D([v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11])
     
+def run_Pose(): 
+    p1 = util.Pose(0.0, 0.0, 0.0)
+    p2 = util.Pose(1.0, 3.0, 0.0)
+    p3 = util.Pose(1.0, -1.0, math.radians(45.0))
+    p4 = util.Pose(1.0, 4.0, math.radians(45.1))
+    p5 = util.Pose(9e-04, 1e-04, math.radians(45.1))
+    p6 = util.Pose(0.0, 0, math.radians(45.09))
+
+    test_Pose([p1, p2, p3, p4, p5, p6])
+    
+    
+    
 if __name__ == '__main__':
     #run_Point2D()
-    run_Vector2D()
+    #run_Vector2D()
+    run_Pose()
