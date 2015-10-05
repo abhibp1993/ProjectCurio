@@ -35,15 +35,15 @@ class Point2D(object):
         """
         assert isinstance(x, (float, int)), 'x must be a float or int'
         assert isinstance(y, (float, int)), 'x must be a float or int'
-        self._point = np.array([[x], [y], [1]])
+        self.npPoint = np.array([[x], [y], [1]])
     
     @property
     def x(self):
-        return self._point.tolist()[0][0]
+        return self.npPoint.tolist()[0][0]
 
     @property
     def y(self):
-        return self._point.tolist()[1][0]
+        return self.npPoint.tolist()[1][0]
     
     @property
     def positionVector(self):
@@ -339,37 +339,54 @@ class Pose(object):
 
 
 class Transform(object):
-    def __init__(self, translate=zeroVector, rotate=0.0, scale=1.0):
+    """
+    Represents a 2D transformation matrix. 
+    Note: Composition is done in Rotation --> Translation order.
+    """
+    def __init__(self, translate=zeroVector, rotate=0.0):
         self.translate = translate
-        self.rotate = rotate  
-        self.scale = scale
+        self.rotate = rotate   
 
+        
     @property    
     def transformMatrix(self):
         """
         Returns 3x3 Transformation Matrix
         """
-        raise NotImplementedError
+        return np.array([[math.cos(self.rotate), -math.sin(self.rotate), self.translate.x], \
+                         [math.sin(self.rotate),  math.cos(self.rotate), self.translate.y], \
+                         [                    0,                     0,                1]])
         
     def _applyToPoint(self, point):
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
-        raise NotImplementedError
+        p = self.transformMatrix.dot(point.npPoint)
+        return Point2D(x=p[0][0], y=p[1][0])
     
     def _applyToPose(self, pose):
         assert isinstance(pose, Pose), 'pose must be instance of util.Pose'
-        raise NotImplementedError
-    
+        p = self.transformMatrix.dot(pose.npPoint)
+        return Pose(x=p[0][0], y=p[1][0], theta=(pose.theta+self.rotate)%(2*math.pi))
+        
     def _applyToVector(self, vec):
         assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
-        raise NotImplementedError
+        p1 = self._applyToPoint(vec.p1)
+        p2 = self._applyToPoint(vec.p2)
+        return Vector2D(p1, p2)
+        
+    def _applyToTransform(self, T):
+        assert isinstance(T, Transform), 'T must be an instance of util.Transform'
+        newT = self.transformMatrix.dot(T.transformMatrix)
+        trans = Vector2D(ORIGIN, Point2D(x=newT[0][2], y=newT[1][2]))
+        rot = self.rotate + T.rotate
+        return Transform(translate=trans, rotate=rot)
     
     def __mul__(self, obj):
         if      isinstance(obj, Point2D):   return self._applyToPoint(obj)
         elif    isinstance(obj, Vector2D):  return self._applyToVector(obj)
         elif    isinstance(obj, Pose):      return self._applyToPose(obj)
-        elif    isinstance(obj, Transform): raise NotImplementedError
-        elif    isinstance(obj, list):      raise NotImplementedError
-        elif    isinstance(obj, tuple):     raise NotImplementedError
+        elif    isinstance(obj, Transform): return self._applyToTransform(obj)
+        elif    isinstance(obj, list):      return [self*o for o in obj]
+        elif    isinstance(obj, tuple):     return (self*o for o in obj)
         else: raise AttributeError('Transform cannot be applied on ' + str(type(obj)))
             
             
