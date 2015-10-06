@@ -16,12 +16,14 @@ import math
 import numpy as np
 from scipy.spatial import ConvexHull
 
+__version__ = '2.0'
+
 FLOAT_PRECISION = 4     # No. of Decimal Places
 _CCW = 'ccw'
 _CW = 'cw'
 _COLLINEAR = 'collinear'
 
-print 'importing util modified...'
+print 'importing util ' + __version__ + '...'
 
 
 
@@ -39,7 +41,7 @@ class Point2D(object):
         """
         assert isinstance(x, (float, int)), 'x must be a float or int'
         assert isinstance(y, (float, int)), 'x must be a float or int'
-        if homoP == None:
+        if isinstance(homoP, type(None)):
             self.npPoint = np.array([[x], [y], [1]])
         else:
             assert homoP.shape in [(1, 3), (3, 1)], 'homogeneous coordinate must be np.array of size 3x1 or 1x3'
@@ -111,7 +113,7 @@ class Point2D(object):
         return Point2D(self.x - point.x, self.y - point.y)
     
     def __str__(self):
-        return 'P(' + str(self.x) + ', ' + str(self.y) + ')'
+        return 'P(' + str(round(self.x, FLOAT_PRECISION)) + ', ' + str(round(self.y, FLOAT_PRECISION)) + ')'
         
 ORIGIN = Point2D()
 
@@ -161,6 +163,10 @@ class Vector2D(object):
         """ Returns length of x component of self-vector """
         return self.p2.y - self.p1.y
     
+    @property
+    def point(self):
+        """ Returns length of x, y component of self-vector as Point2D instance"""
+        return Point2D(self.x, self.y)
     
     @property
     def length(self):
@@ -398,6 +404,10 @@ class Pose(object):
     def point(self):
         """ returns position represented by the Pose. """
         return Point2D(x=self.x, y=self.y)
+        
+    @property
+    def homogeneousPoint(self):
+        return np.array([[self.x], [self.y], [1]])
     
     @property
     def transform(self):
@@ -455,7 +465,8 @@ class Pose(object):
                     theta=(self.theta-pose.theta)%(2*math.pi))
 
     def __str__(self):
-        return 'Pose(' + str(self.x) + ', ' + str(self.y) + ', ' + str(math.degrees(self.theta)) + ')'
+        return 'Pose(' + str(round(self.x, FLOAT_PRECISION)) + ', ' + str(round(self.y, FLOAT_PRECISION)) + ', ' + str(round(math.degrees(self.theta), FLOAT_PRECISION)) + ')'
+        
         
     
 class Polygon(object):
@@ -477,7 +488,7 @@ class Polygon(object):
         else:
             raise AttributeError('Instantiation Failed. Unacceptable set of arguments received.')
         
-        self._removeRedundantPoints()   #remove redundant points, if any.
+        #self._removeRedundantPoints()   #remove redundant points, if any.
         self._updateEdges()             # Generate edges variable, and fill it up.
 
     @property
@@ -604,34 +615,74 @@ class Transform(object):
 
         
     @property    
-    def transformMatrix(self):
+    def transformMatrixRT(self):
+        """
+        Returns 3x3 Transformation Matrix
+        RT: rotation followed by translation
+        
+        Note: while composing matrices, (A.(Bx)) = (B.A)x
+        """
+        return self.translationMatrix.dot(self.rotationMatrix)
+                         
+    @property    
+    def transformMatrixTR(self):
+        """
+        Returns 3x3 Transformation Matrix
+        TR: translation followed by rotation
+        """
+        return self.rotationMatrix.dot(self.translationMatrix)
+                         
+    @property
+    def translationMatrix(self):
+        """ Returns 2D translation matrix """
+        return np.array([[1, 0, self.translate.x], \
+                         [0, 1, self.translate.y], \
+                         [0, 0,                1]])
+    
+    @property    
+    def rotationMatrix(self):
         """
         Returns 3x3 Transformation Matrix
         """
-        return np.array([[math.cos(self.rotate), -math.sin(self.rotate), self.translate.x], \
-                         [math.sin(self.rotate),  math.cos(self.rotate), self.translate.y], \
-                         [                    0,                     0,                1]])
-        
+        return np.array([[math.cos(self.rotate), -math.sin(self.rotate), 0], \
+                         [math.sin(self.rotate),  math.cos(self.rotate), 0], \
+                         [                    0,                     0,  1]])
+                         
     def _applyToPoint(self, point):
+        """ Applies transform to point (First Rotate, then Translate) """
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
-        p = self.transformMatrix.dot(point.npPose)
-        return Point2D(x=p[0][0], y=p[1][0])
+        p = self.transformMatrixRT.dot(point.npPoint)        
+        return Point2D(homoP=p)
     
     def _applyToPose(self, pose):
+        """ Applies transform to pose (First Rotate, then Translate) """
         assert isinstance(pose, Pose), 'pose must be instance of util.Pose'
-        homogenousPose = np.array([[pose.x], [pose.y], [1]])
-        p = self.transformMatrix.dot(homogenousPose)
-        return Pose(x=p[0][0], y=p[1][0], theta=(pose.theta+self.rotate)%(2*math.pi))
+        
+        tmp = pose.transform.transformMatrixRT.dot(self.transformMatrixRT)
+        nx = tmp[0][2]
+        ny = tmp[1][2]
+        ntheta = math.atan2(tmp[1][0], tmp[0][0]) % (2 * math.pi)
+        
+        return Pose(x=nx, y=ny, theta=ntheta)
+        
+#        t = (pose.theta + self.rotate) % (2 * math.pi)
+#        self.rotate = t
+#        tmp = self.transformMatrixTR.dot(pose.homogeneousPoint)
+#        print self.transformMatrixTR
+#        return Pose(x=tmp[0][0], y=tmp[1][0], theta=t)
         
     def _applyToVector(self, vec):
         assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
+        
         p1 = self._applyToPoint(vec.p1)
         p2 = self._applyToPoint(vec.p2)
         return Vector2D(p1, p2)
         
     def _applyToTransform(self, T):
+        """ Intricate details of sequencing """
         assert isinstance(T, Transform), 'T must be an instance of util.Transform'
-        newT = self.transformMatrix.dot(T.transformMatrix)
+        
+        newT = T.transformMatrixRT.dot(self.transformMatrixRT)
         trans = Vector2D(ORIGIN, Point2D(x=newT[0][2], y=newT[1][2]))
         rot = self.rotate + T.rotate
         return Transform(translate=trans, rotate=rot)
@@ -665,4 +716,6 @@ def turn(p1, p2, p3, eps = (10**FLOAT_PRECISION)):
     if ((lhs > rhs) and (not (abs(lhs - rhs) < eps))):   return _CCW
     elif ((lhs < rhs) and (not (abs(lhs - rhs) < eps))): return _CW
     elif abs(lhs - rhs) < eps:                           return _COLLINEAR
-            
+      
+def Rot(theta):
+    return Transform(rotate=theta)
