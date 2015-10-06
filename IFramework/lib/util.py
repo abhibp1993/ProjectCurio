@@ -6,6 +6,7 @@ Classes:
     - Point2D
     - Vector2D
     - Pose
+    - Polygon
     - Transform
 
 @author: AbhishekKulkarni
@@ -13,9 +14,12 @@ Classes:
 
 import math
 import numpy as np
+from scipy.spatial import ConvexHull
 
 FLOAT_PRECISION = 4     # No. of Decimal Places
-
+_CCW = 'ccw'
+_CW = 'cw'
+_COLLINEAR = 'collinear'
 
 print 'importing util modified...'
 
@@ -26,7 +30,7 @@ class Point2D(object):
     Represents in Homogeneous Coordinates as column vector
     """
     
-    def __init__(self, x=0.0, y=0.0):
+    def __init__(self, x=0.0, y=0.0, homoP = None):
         """ 
         Constructor.
         
@@ -35,7 +39,17 @@ class Point2D(object):
         """
         assert isinstance(x, (float, int)), 'x must be a float or int'
         assert isinstance(y, (float, int)), 'x must be a float or int'
-        self.npPoint = np.array([[x], [y], [1]])
+        if homoP == None:
+            self.npPoint = np.array([[x], [y], [1]])
+        else:
+            assert homoP.shape in [(1, 3), (3, 1)], 'homogeneous coordinate must be np.array of size 3x1 or 1x3'
+            if homoP.shape == (1, 3):
+                homoP = homoP.transpose()
+                
+            if homoP[2][0] != 1:
+                self.npPoint = np.array([[float(homoP[0][0])/homoP[2][0]], [float(homoP[1][0])/homoP[2][0]], [1]])
+            else:
+                self.npPoint = homoP
     
     @property
     def x(self):
@@ -105,9 +119,7 @@ ORIGIN = Point2D()
 
 class Vector2D(object):
     EPS = 1e-02
-    _CCW = 'ccw'
-    _CW = 'cw'
-    _COLLINEAR = 'collinear'
+    
     
     def __init__(self, p1 = None, p2 = None, r=None, theta=None):
         """
@@ -160,6 +172,11 @@ class Vector2D(object):
         """ Returns unit vector in direction of vector. """
         return Vector2D(p1=self.p1, r=1.0, theta=self.arg)
     
+    @property
+    def equation(self):
+        """ Returns a numpy.array representing line in homogeneous coordinates """
+        return np.cross(self.p1.npPoint.transpose(), self.p2.npPoint.transpose()).transpose()
+        
     def normalize(self):
         """ Normalizes self-vector """
         self.mag = 1.0
@@ -194,7 +211,10 @@ class Vector2D(object):
         @vec: Vector2D instance
         """
         assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
-        raise NotImplementedError
+        
+        eqn1 = self.equation
+        eqn2= vec.equation
+        return Point2D(homoP=np.cross(eqn1.transpose(), eqn2.transpose()))
         
     def turn(self, point, eps = EPS):
         """
@@ -437,8 +457,142 @@ class Pose(object):
     def __str__(self):
         return 'Pose(' + str(self.x) + ', ' + str(self.y) + ', ' + str(math.degrees(self.theta)) + ')'
         
+    
+class Polygon(object):
+    def __init__(self, pSet = None, poly = None):
+        """
+        Constructor.
+        Instantiation may be done using two ways:
+            1. pSet: list or tuple of Point2D instances.
+            2. poly: another instance of Polygon.
+        """
+        if poly == None:
+            assert isinstance(pSet, (list, tuple)), 'pSet must be a list or tuple'
+            assert len(pSet) >= 3, 'At least 3 points required to define Polygon'
+            assert not(False in [isinstance(p, Point2D) for p in pSet]), 'pSet must be set of util.Point2D instances'
+            self.pSet = pSet
+        elif pSet == None:
+            assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
+            self.pSet = [p for p in poly.pSet]
+        else:
+            raise AttributeError('Instantiation Failed. Unacceptable set of arguments received.')
         
+        self._removeRedundantPoints()   #remove redundant points, if any.
+        self._updateEdges()             # Generate edges variable, and fill it up.
 
+    @property
+    def isConvex(self):
+        """
+        Determines if the polygon is convex or not.
+        Algorithm checks if all points in polygon lie on convex hull formed using these points.
+        If yes, it's convex polygon, else - it's not!!
+        
+        Running Time: O(nlogn), using scipy's implementation of convex hull computation.
+        [Note: Assumes no redundant points exist, i.e. no three consecutive vertices are collinear.]
+        """
+        points = [p.npPoint for p in self.pSet]
+        hull = ConvexHull(points)
+        if len(self.pSet) == len(hull.vertices):
+            return True
+        
+        return False
+        
+    @property
+    def area(self):
+        raise NotImplementedError
+    
+    @property
+    def vertices(self):
+        return self.pSet
+    
+    def _updateEdges(self):
+        self.edges = []
+        for i in range(-1, len(self.pSet)-1):
+            self.edges.append(Vector2D(self.pSet[i], self.pSet[i+1]))
+        
+    def _removeRedundantPoints(self):
+        """ 
+        Removes any redundant point from vertex set. A redundant point is that, which 
+        is collinear with other 2 vertices.  
+        
+        Running Time: O(n), n: number of vertices of polygon
+        """
+        redundant = []
+        for i in range(-2, len(self.pSet)-3):
+            p1, p2, p3 = self.pSet[i:i+3]
+            if turn(p1, p2, p3) == _COLLINEAR: redundant.append(p2)
+        
+        for p in redundant:
+            self.pSet.remove(p)
+                    
+    def _isInteriorPoint(self, point):
+        """ 
+        Checks if point lies inside the polygon. Works for convex, and non-convex polygons.
+        Implements Ray-Casting Algorithm 
+        
+        Running Time: O(n), n is number of vertices of polygon.
+        """
+        assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
+        
+        #select a point @ x= 2*max(all points.x)
+        rayTip = Point2D(y=point.y)
+        rayTip.x = 2 * max([p.x for p in self.pSet])
+        ray = Vector2D(point, rayTip)
+        
+        # count number of intersections
+        intersectionCount = 0
+        for e in self.edges:
+            if ray.intersect(e): intersectionCount += 1 
+            
+        if intersectionCount % 2 == 1: return True
+        return False
+    
+    def intersect(self, poly):
+        """
+        Computes if the polygon, poly, intersects self. 
+        
+        Running Time: O(mn), m, n are number of vertices in 2 polygons respectively.
+        """
+        assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
+        
+        for e in self.edges:
+           for d in poly.edges: 
+               if d.intersect(e): return True
+        
+        return False
+        
+    def getIntersection(self, poly):
+        assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
+        raise NotImplementedError
+    
+    def union(self, poly):
+        assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
+        raise NotImplementedError
+
+    def applyTransform(self, T):
+        assert isinstance(T, Transform), 'T must be an instance of util.Transform'
+        self.pSet = T * self.pSet
+    
+    def __contains__(self, obj):
+        if    isinstance(obj, Point2D):  return self._isInteriorPoint(obj)
+        elif  isinstance(obj, Vector2D): return self._isInteriorPoint(obj.p1) and self._isInteriorPoint(obj.p2)
+        elif  isinstance(obj, Polygon):  return self._isInteriorPoint(obj.pSet)
+        elif  isinstance(obj, list):     return not (False in [p in self for p in obj])
+        elif  isinstance(obj, tuple):    return not (False in [p in self for p in obj])
+        else: TypeError('Invalid input for "in" function')
+            
+    def __add__(self, poly):
+        """ Union of two polygons """
+        assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
+        return self.union(poly)
+    
+    def __mul__(self, poly):
+        """ Intersection of two polygons """
+        assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
+        return self.getIntersection(poly)
+        
+        
+        
 class Transform(object):
     """
     Represents a 2D transformation matrix. 
@@ -493,3 +647,22 @@ class Transform(object):
             
     def __str__(self):
         return 'translate: ' + str(self.translate) + ' rotate: ' + str(self.rotate)
+        
+###########################################################################
+
+
+def turn(p1, p2, p3, eps = (10**FLOAT_PRECISION)):
+    """ 
+    Computes the turn from p1->p2 to p3 as clockwise, counter-clockwise or straight.
+    
+    @p1: Point2D instance
+    @p2: Point2D instance
+    @p3: Point2D instance
+    """
+    lhs = (p3.y - p1.y)*(p2.x - p1.x)
+    rhs = (p2.y - p1.y)*(p3.x - p1.x)
+    
+    if ((lhs > rhs) and (not (abs(lhs - rhs) < eps))):   return _CCW
+    elif ((lhs < rhs) and (not (abs(lhs - rhs) < eps))): return _CW
+    elif abs(lhs - rhs) < eps:                           return _COLLINEAR
+            
