@@ -35,16 +35,18 @@ class Sonar(object):
 
         return util.Polygon([p1, p2, p3])
         
-        
+    def transform(self, T):
+        """ Applies transform T to self. """
+        self.pose = T * self.pose
     
-    def _draw(self, fig):
+    def _draw(self, fig, style):
         reg = self.region.pSet
         fig
         x = [p.x for p in reg]
         y = [p.y for p in reg]
         x.append(x[0])
         y.append(y[0])        
-        pylab.plot(x, y, 'b-')
+        pylab.plot(x, y, style)
         
 
 if __name__ == '__main__':
@@ -56,12 +58,18 @@ if __name__ == '__main__':
     sonar4 = Sonar(util.Pose(-0.07, 0.076, math.radians(170)), scanRange=1.6)
     sonar5 = Sonar(util.Pose( 0.07, 0.076, math.radians(10)),  scanRange=1.6)
     
+    sonar = [sonar1, sonar2, sonar3, sonar4, sonar5]
+
+    T = util.Transform(rotate=math.radians(180))
+    for s in sonar:
+        s.transform(T)
+            
+    
+    
     fig = pylab.figure(1)
     pylab.xlim([-5,5])
     pylab.ylim([-5,5])
-    sonar1._draw(fig)
-    sonar2._draw(fig)
-    sonar3._draw(fig)
-    sonar4._draw(fig)
-    sonar5._draw(fig)
+    for s in sonar:
+        s._draw(fig, 'b-')
+    
     pylab.show()

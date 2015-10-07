@@ -5,9 +5,6 @@ Created on Mon Sep 21 23:52:56 2015
 @author: AbhishekKulkarni
 """
 
-
-print "Importing io"
-
 import util
 import numpy as np
 
@@ -143,3 +140,6 @@ class Action(object):
         
     def __str__(self):
         return str('v = ' + str(self.fvel) + ' m/s' + ', omega = ' + str(self.rvel) + ' rad/s')
+
+
+    print "imported lib.io succesfully..."
