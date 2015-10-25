@@ -15,6 +15,7 @@ Classes:
 import math
 import numpy as np
 from scipy.spatial import ConvexHull
+import copy
 
 __version__ = '2.0'
 
@@ -26,6 +27,49 @@ _COLLINEAR = 'collinear'
 print 'importing util ' + __version__ + '...'
 
 
+###########################################################################################
+#Helper classes
+
+class Node(object):
+    def __init__(self, data, name):
+        self.data = data
+        self.name = name
+        self.inNeighbours = list()
+        self.outNeighbours = list()
+        self.inDegree = 0
+        self.outDegree = 0
+
+        self.visited = False
+        self.distance = float('inf')
+                
+    @property
+    def nodeName(self):
+        return self.name
+        
+    @nodeName.setter
+    def nodeName(self,value):
+        self.name  = value
+        
+    def Heuristic(self):
+        return 0
+        
+    def __str__(self):
+        return str(self.name)
+
+
+class Edge(object):
+    def __init__(self,source,destination,weight=1):
+        self.source = source
+        self.destination= destination
+        self.weight = weight
+        
+    @property
+    def edgeWeight(self):
+        return self.weight
+        
+    @edgeWeight.setter
+    def edgeWeight(self,value):
+        self.weight = value
 
 
 ##########################################################################################
@@ -849,6 +893,108 @@ class Transform(object):
     def __str__(self):
         return 'translate: ' + str(self.translate) + ' rotate: ' + str(round(self.rotate, FLOAT_PRECISION))
         
+
+
+class Graph(object):
+    def __init__(self,allowDuplication=True):
+        self.nodeList = list()
+        self.edgeList = list()
+        self.allowDuplication = allowDuplication
+        
+    def addNode(self,data,name):
+        if self.allowDuplication == False:
+            for node in self.nodeList:
+                if node.data == data:
+                    print "Duplication of data not allowed returning node with same data \n"
+                    return node
+        for node in self.nodeList:
+            if node.nodeName == name:
+                print "Duplicat names not allowed returning node with same name \n"
+                return node
+                
+        newNode = Node(data,name)
+        self.nodeList.append(newNode)
+        return newNode
+        
+    def addEdge(self,source,destination,weight):
+        newEdge = Edge(source,destination,weight)
+        self.edgeList.append(newEdge)
+        source.inNeighbours.append(destination)
+        destination.inNeighbours.append(source)
+        
+        source.inDegree += 1
+        destination.inDegree += 1
+        
+        #Indegree outdegree for non directional graph is same
+        source.outDegree = source.inDegree
+        destination.outDegree = destination.inDegree
+        
+        source.outNeighbours = source.inNeighbours
+        destination.outNeighbours = destination.inNeighbours
+        
+    def getEdge(self,source,destination):
+        for edge in self.edgeList:
+            if((edge.source.nodeName == source.nodeName and edge.destination.nodeName == destination.nodeName) or (edge.source.nodeName == destination.nodeName and edge.destination.nodeName == source.nodeName)):
+                return edge
+
+    def reset(self):
+        for node in self.nodeList:
+            node.visited = False
+            node.distance = float('inf')
+                
+        
+
+
+class DiGraph(object):
+    def __init__(self):
+        self.nodeList = list()
+        self.edgeList = list()
+        
+    def addNode(self,data,name):
+        if self.allowDuplication == False:
+            for node in self.nodeList:
+                if node.data == data:
+                    print "Duplication of data not allowed returning node with same data \n"
+                    return node
+                    
+        for node in self.nodeList:
+            if node.nodeName == name:
+                print "Duplicat names not allowed returning node with same name \n"
+                return node
+                
+        newNode = Node(data,name)
+        self.nodeList.append(newNode)
+        return newNode
+        
+    def addEdge(self,source,destination,weight):
+        newEdge = Edge(source,destination,weight)
+        self.edgeList.append(newEdge)
+        
+        source.outNeighbours.append(destination)
+        destination.inNeighbours.append(source)        
+
+        source.outDegree += 1
+        destination.inDegree += 1
+        
+        
+    def getEdge(self,source,destination):
+        for edge in self.edgeList:
+            if(edge.source.nodeName == source.nodeName and edge.destination.nodeName == destination.nodeName):
+                return edge
+
+
+###########################################################################################
+#Helper Functions
+
+def greedyPop(nodeList):
+   
+    minNode = nodeList[0]
+    for node in nodeList:
+        if minNode.distance > node.distance:
+            minNode = node
+            
+    return minNode
+
 ###########################################################################
 
 
@@ -870,5 +1016,74 @@ def turn(p1, p2, p3, eps = (10**FLOAT_PRECISION)):
 def Rot(theta):
     return Transform(rotate=theta)
 
+
+def AStar(Graph,start,goal):
+    path = list()
+    totalCost = 0
+    previousNode = dict()
+    
+    start.distance = 0
+    nodeQueue = copy.copy(Graph.nodeList)
+
+    while(len(nodeQueue) != 0):
+        minNode = greedyPop(nodeQueue)
+        nodeQueue.remove(minNode)
+        
+        if minNode.nodeName == goal.nodeName:
+            break
+        
+        for neighbour in minNode.outNeighbours:
+            newEdge = Graph.getEdge(minNode,neighbour)
+            newDist = minNode.distance + newEdge.weight + neighbour.Heuristic()
+            if newDist < neighbour.distance:
+                neighbour.distance = newDist
+                previousNode[neighbour] = minNode
+                
+
+    tempNode = goal
+    while(tempNode.nodeName != start.nodeName):
+        path.append(tempNode)
+        tempNode = previousNode[tempNode]
+        
+    path.append(start)
+    path.reverse()
+    totalCost = goal.distance
+    Graph.reset()
+    return (path,totalCost)
+
+
+def Dijkastra(Graph,start,goal):
+    path = list()
+    totalCost = 0
+    previousNode = dict()
+    
+    start.distance = 0
+    nodeQueue = copy.copy(Graph.nodeList)
+
+    while(len(nodeQueue) != 0):
+        minNode = greedyPop(nodeQueue)
+        nodeQueue.remove(minNode)
+        
+        if minNode.nodeName == goal.nodeName:
+            break
+        
+        for neighbour in minNode.outNeighbours:
+            newEdge = Graph.getEdge(minNode,neighbour)
+            newDist = minNode.distance + newEdge.weight
+            if newDist < neighbour.distance:
+                neighbour.distance = newDist
+                previousNode[neighbour] = minNode
+                
+
+    tempNode = goal
+    while(tempNode.nodeName != start.nodeName):
+        path.append(tempNode)
+        tempNode = previousNode[tempNode]
+        
+    path.append(start)
+    path.reverse()
+    totalCost = goal.distance
+    Graph.reset()
+    return (path,totalCost)
 
 
