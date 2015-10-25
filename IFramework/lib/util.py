@@ -27,6 +27,10 @@ print 'importing util ' + __version__ + '...'
 
 
 
+
+##########################################################################################
+# User-Class Implementation
+
 class Point2D(object):
     """
     Represents in Homogeneous Coordinates as column vector
@@ -52,8 +56,10 @@ class Point2D(object):
             if homoP.shape == (1, 3):
                 homoP = homoP.transpose()
                 
-            if homoP[2][0] != 1:
+            if homoP[2][0] != 1 and homoP[2][0] != 0:
                 self.npPoint = np.array([[float(homoP[0][0])/homoP[2][0]], [float(homoP[1][0])/homoP[2][0]], [1]])
+            elif homoP[2][0] == 0:
+                self.npPoint = np.array([[float('inf')], [float('inf')], [0]])
             else:
                 self.npPoint = homoP
     
@@ -123,7 +129,16 @@ class Point2D(object):
     def __sub__(self, point):
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
         return Point2D(self.x - point.x, self.y - point.y)
-    
+        
+    def __transform__(self, T):
+        assert isinstance(T, Transform), 'T must be instance of util.Transform'
+        if T.isRT == True:
+            p = T.transformMatrixRT.dot(self.npPoint)
+        else:
+            p = T.transformMatrixTR.dot(self.npPoint)
+            
+        return Point2D(homoP=p)
+        
     def __str__(self):
         return self.name + '(' + str(round(self.x, FLOAT_PRECISION)) + ', ' + str(round(self.y, FLOAT_PRECISION)) + ')'
         
@@ -154,12 +169,12 @@ class Vector2D(object):
             self.arg = p1.angleTo(p2)
         elif isinstance(p1, Point2D) and isinstance(r, (float, int)) and isinstance(theta, (float, int)) and p2 == None:
             self.p1 = p1
-            self.mag = r
+            self.mag = abs(r)
             self.arg = theta
             self.p2 = Point2D(p1.x + r*math.cos(theta), p1.y + r*math.sin(theta))
         elif isinstance(r, (float, int)) and isinstance(theta, (float, int)) and p2 == None and p1 == None:
             self.p1 = ORIGIN
-            self.mag = r
+            self.mag = abs(r)
             self.arg = theta
             self.p2 = Point2D(r*math.cos(theta), r*math.sin(theta))
         else:
@@ -220,10 +235,10 @@ class Vector2D(object):
         o4 = vec.turn(self.p2)
         
         if (o1 != o2 and o3 != o4): return True
-        if (o1 == Vector2D._COLLINEAR and (vec.p1 in self)): return True
-        if (o2 == Vector2D._COLLINEAR and (vec.p2 in self)): return True
-        if (o3 == Vector2D._COLLINEAR and (self.p1 in vec)): return True
-        if (o4 == Vector2D._COLLINEAR and (self.p2 in vec)): return True
+        if (o1 == _COLLINEAR and (vec.p1 in self)): return True
+        if (o2 == _COLLINEAR and (vec.p2 in self)): return True
+        if (o3 == _COLLINEAR and (self.p1 in vec)): return True
+        if (o4 == _COLLINEAR and (self.p2 in vec)): return True
         
         return False
         
@@ -250,9 +265,9 @@ class Vector2D(object):
         lhs = (point.y - self.p1.y)*(self.p2.x - self.p1.x)
         rhs = (self.p2.y - self.p1.y)*(point.x - self.p1.x)
         
-        if ((lhs > rhs) and (not (abs(lhs - rhs) < eps))):   return Vector2D._CCW
-        elif ((lhs < rhs) and (not (abs(lhs - rhs) < eps))): return Vector2D._CW
-        elif abs(lhs - rhs) < eps:                           return Vector2D._COLLINEAR
+        if ((lhs > rhs) and (not (abs(lhs - rhs) < eps))):   return _CCW
+        elif ((lhs < rhs) and (not (abs(lhs - rhs) < eps))): return _CW
+        elif abs(lhs - rhs) < eps:                           return _COLLINEAR
             
     
     def isccw(self, point, eps = EPS):
@@ -293,7 +308,7 @@ class Vector2D(object):
             close to vector, then it lies on the vector.
         """
         assert isinstance(point, Point2D), 'point must be instance of util.Point2D'
-        return self.turn(point) == Vector2D._COLLINEAR
+        return self.turn(point) == _COLLINEAR
     
     def dot(self, vec):
         """
@@ -335,13 +350,22 @@ class Vector2D(object):
         assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
         return Vector2D(p1=self.p1, p2=Point2D(self.p2.x - vec.x, self.p2.y - vec.y))
     
-    def __mul__(self, vec):
+    def __mul__(self, obj):
         """
-        Dot product
+        Scaling or Dot product
         """
-        assert isinstance(vec, Vector2D), 'vec must be instance of util.Vector2D'
-        return self.dot(vec)
-   
+        print 'multiplying...'
+        if isinstance(obj, Vector2D):
+            return self.dot(obj)
+        elif isinstance(obj, (float, int)):
+            l = self.mag * obj
+            return Vector2D(p1=self.p1, r=l, theta=self.arg)
+        else:
+            raise AssertionError('Multiplication with vector is defined with scalar or another vector only.')
+    
+    def __rmul__(self, obj):
+        return self.__mul__(obj)
+        
     def __pow__(self, vec):
         """
         Cross Product
@@ -372,6 +396,14 @@ class Vector2D(object):
                 point.y <= max(self.p1.y + Vector2D.EPS, self.p2.y + Vector2D.EPS, self.p1.y - Vector2D.EPS, self.p2.y - Vector2D.EPS) and \
                 point.y >= min(self.p1.y + Vector2D.EPS, self.p2.y + Vector2D.EPS, self.p1.y - Vector2D.EPS, self.p2.y - Vector2D.EPS))
                 
+    
+    def __transform__(self, T):
+        assert isinstance(T, Transform), 'T must be instance of util.Transform'
+        tmpV = Vector2D(p1=ORIGIN, p2=self.p2-self.p1)  #translate vector to Origin
+        nP1 = T * tmpV.p1
+        nP2 = T * tmpV.p2
+        return Vector2D(p1=(self.p1+nP1), p2=(self.p1+nP2))
+        
     def __str__(self):
         return 'V[' + str(self.p1) + ', ' + str(self.p2) + ']'
 
@@ -531,7 +563,14 @@ class Polygon(object):
     @property
     def vertices(self):
         return self.pSet
-    
+
+    @property
+    def centroid(self):
+        x = sum([p.x for p in self.pSet])/len(self.pSet)
+        y = sum([p.y for p in self.pSet])/len(self.pSet)
+        return Point2D(x, y)
+        
+        
     def _updateEdges(self):
         self.edges = []
         for i in range(-1, len(self.pSet)-1):
@@ -574,19 +613,26 @@ class Polygon(object):
         if intersectionCount % 2 == 1: return True
         return False
     
-    def intersect(self, poly):
+    def intersect(self, obj):
         """
         Computes if the polygon, poly, intersects self. 
         
         Running Time: O(mn), m, n are number of vertices in 2 polygons respectively.
         """
-        assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
+        assert isinstance(obj, (Vector2D, Polygon)), 'poly must be a util.Vector2D or util.Polygon instance'
         
-        for e in self.edges:
-           for d in poly.edges: 
-               if d.intersect(e): return True
-        
-        return False
+        if isinstance(obj, Polygon):
+            for e in self.edges:
+               for d in obj.edges: 
+                   if d.intersect(e): return True
+            
+            return False
+        else:
+            for d in self.edges: 
+                   if d.intersect(obj): return True
+                  
+            return False                  
+            
         
     def getIntersection(self, poly):
         assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
@@ -618,23 +664,110 @@ class Polygon(object):
         assert isinstance(poly, Polygon), 'poly must be a util.Polygon instance'
         return self.getIntersection(poly)
         
+    def __transform__(self, T):
+        G = self.centroid
+        newPoints = [P-G for P in self.pSet]
+        vectors = [Vector2D(ORIGIN, P) for P in newPoints]
         
+        newpSet = []
+        for v in vectors:
+            newV = T * v
+            newpSet.append(newV.p2)
+        
+        points = [p+G for p in newpSet]
+        return Polygon(points)
+        
+
+class Circle(object):
+    _EPS = 1e-02
+    
+    def __init__(self, center=Point2D(), rad=1.0):
+        self.C = center
+        self.r = rad
+    
+    def on(self, point, eps=_EPS):
+        if abs(self.C.distTo(point) - self.r) < eps:
+            return True
+        
+        return False
+    
+    def isInterior(self, point, eps=_EPS):
+        if (self.r - self.C.distTo(point)) > eps:
+            return True
+        
+        return False
+    
+    def isExterior(self, point, eps=_EPS):
+        return (not self.isInterior(point)) and (not self.on(point))
+    
+    def tangent(self, point):
+        """
+        Returns the tangent vectors from external point to self-circle.
+        
+        @point: util.Point2D instance
+        @returns: 2-list of util.Vector2D instances 
+        
+        Remark: 
+        - First vector represents the tangent oriented ccw w.r.t. PC vector,
+          where P is external point, C is center of circle.
+        - The point of contact can be extracted by accessing "p2" 
+          property of returned vectors.
+        """
+        assert isinstance(point, Point2D), 'point must be instance of util.Point2D class'
+        
+        vecPC = Vector2D(p1=point, p2=self.C)
+        angle = math.asin(self.r/point.distTo(self.C))
+        T = Transform()
+        
+        T.rotate = angle
+        vecPT1 = T * vecPC
+        
+        T.rotate = -angle
+        vecPT2 = T * vecPC
+        
+        vecPT1.normalize()
+        vecPT2.normalize()
+        vecPT1 = vecPT1 * (point.distTo(self.C) * math.cos(angle))
+        vecPT2 = vecPT2 * (point.distTo(self.C) * math.cos(angle))
+
+        return [vecPT1, vecPT2]
+        
+    def supportingTangent(self, circle, eps=_EPS):
+        assert isinstance(circle, Circle), 'circle must be instance of util.Circle class'
+        
+#        if abs(circle.r - self.r) > eps:
+#            C1C2 = Vector2D(p1=circle.r, p2=self.r)
+#            P1 = Vector2D(p1=circle.C, r=circle.r, theta=(C1C2.arg+math.pi/2)).p2
+#            P2 = Vector2D(p1=self.C,   r=self.r,   theta=(C1C2.arg+math.pi/2)).p2
+#            return Vector2D(p1=P1, p2=P2)
+#        
+#        elif circle.r < self.r:
+#            smallCircle = circle
+#            bigCircle   = self
+#        
+#        else: #circle.r > self.r
+#            smallCircle = self
+#            bigCircle   = circle
+#            
+#        P = 
+                    
         
 class Transform(object):
     """
     Represents a 2D transformation matrix. 
     Note: Composition is done in Rotation --> Translation order.
     """
-    def __init__(self, translate=zeroVector, rotate=0.0):
+    def __init__(self, translate=zeroVector, rotate=0.0, applyRotThenTrans=True):
         self.translate = translate
         self.rotate = rotate   
+        self.isRT = applyRotThenTrans
 
         
     @property    
     def transformMatrixRT(self):
         """
         Returns 3x3 Transformation Matrix
-        RT: rotation followed by translation
+        RT: rotation followed by translation, i.e. object is rotated first then translated
         
         Note: while composing matrices, (A.(Bx)) = (B.A)x
         """
@@ -644,7 +777,7 @@ class Transform(object):
     def transformMatrixTR(self):
         """
         Returns 3x3 Transformation Matrix
-        TR: translation followed by rotation
+        TR:  translation followed by rotation, i.e. object is translated first then rotated
         """
         return self.rotationMatrix.dot(self.translationMatrix)
                          
@@ -704,16 +837,17 @@ class Transform(object):
         return Transform(translate=trans, rotate=rot)
     
     def __mul__(self, obj):
-        if      isinstance(obj, Point2D):   return self._applyToPoint(obj)
-        elif    isinstance(obj, Vector2D):  return self._applyToVector(obj)
+        if      isinstance(obj, Point2D):   return obj.__transform__(self) #self._applyToPoint(obj)
+        elif    isinstance(obj, Vector2D):  return obj.__transform__(self) #self._applyToVector(obj)
         elif    isinstance(obj, Pose):      return self._applyToPose(obj)
         elif    isinstance(obj, Transform): return self._applyToTransform(obj)
+        elif    isinstance(obj, Polygon):   return obj.__transform__(self)
         elif    isinstance(obj, list):      return [self*o for o in obj]
         elif    isinstance(obj, tuple):     return (self*o for o in obj)
         else: raise AttributeError('Transform cannot be applied on ' + str(type(obj)))
             
     def __str__(self):
-        return 'translate: ' + str(self.translate) + ' rotate: ' + str(self.rotate)
+        return 'translate: ' + str(self.translate) + ' rotate: ' + str(round(self.rotate, FLOAT_PRECISION))
         
 ###########################################################################
 
@@ -735,5 +869,6 @@ def turn(p1, p2, p3, eps = (10**FLOAT_PRECISION)):
       
 def Rot(theta):
     return Transform(rotate=theta)
+
 
 
