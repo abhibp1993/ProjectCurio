@@ -1086,4 +1086,43 @@ def Dijkastra(Graph,start,goal):
     Graph.reset()
     return (path,totalCost)
 
+def DFS(start, path=[]):
+  '''recursive depth first search from start'''
+  path=path+[start]
+  start.visited = True
+
+  for node in start.outNeighbours:
+    if not node.visited == True:
+      path=DFS(node, path)
+  return path
+
+
+def checkConnectivity(Graph):
+    travelList = DFS(Graph.nodeList[0])
+
+    Graph.reset()
+    if(len(Graph.nodeList) != len(travelList)):
+        return False
+    elif (len(Graph.nodeList) == len(travelList)):
+        return True
+    else:
+        return None
+
+def checkRechability(start, end, path = []):
+    path = path + [start]
+    start.visited = True
+
+    if start == end:
+        return (True,path)
+
+    for node in start.outNeighbours:
+        if node.visited != True: #avoid cycles
+            newPath = checkRechability(node,end,path)
+            if newPath != None:
+                return (True,newPath)
+
+    return (False,None)
+
+
+
 
