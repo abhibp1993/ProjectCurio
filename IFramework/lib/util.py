@@ -916,7 +916,7 @@ class Graph(object):
         self.nodeList.append(newNode)
         return newNode
         
-    def addEdge(self,source,destination,weight):
+    def addEdge(self,source,destination,weight=1):
         newEdge = Edge(source,destination,weight)
         self.edgeList.append(newEdge)
         source.inNeighbours.append(destination)
@@ -1017,7 +1017,7 @@ def Rot(theta):
     return Transform(rotate=theta)
 
 
-def AStar(Graph,start,goal):
+def aStar(Graph,start,goal):
     path = list()
     totalCost = 0
     previousNode = dict()
@@ -1052,7 +1052,7 @@ def AStar(Graph,start,goal):
     return (path,totalCost)
 
 
-def Dijkastra(Graph,start,goal):
+def dijkstra(Graph,start,goal):
     path = list()
     totalCost = 0
     previousNode = dict()
