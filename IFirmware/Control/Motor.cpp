@@ -197,7 +197,7 @@ float Motor::getSpeed(){
   
   if (this->_isEncoder){
     long int count = this->myEnc->getCountsAndReset();
-//    Serial.print("---GS:ENC---"); Serial.println(count);
+    Serial.print("---GS:ENC---"); Serial.println(count);
     this->speed = (count/1636.8) * (1000 / _now) * 60; 
   }
   else{
