@@ -46,6 +46,7 @@
       float speed;                                              // speed: in rpm (float)
       boolean _isPID;                                           // Configuration Parameters
       boolean reverse;                                          // Reverse flag. 
+      long int _lastRunTime;                             // last call to get_speed routine
     
     public:                                                     // Public Variables and Methods
       Motor(uint8_t pwm, uint8_t in1, uint8_t in2);             // Instantiation method
