@@ -192,12 +192,13 @@ Last Modified:
   2. abhibp1993: 11 Sep 2015, 1000
 **********************************************************************************/
 float Motor::getSpeed(){
-  static long int _lastRunTime;
-  long int _now = millis() - _lastRunTime;
+  //static long int _lastRunTime;
+  long int _now = millis() - this->_lastRunTime;
+  this->_lastRunTime = millis();
   
   if (this->_isEncoder){
     long int count = this->myEnc->getCountsAndReset();
-//    Serial.print("---GS:ENC---"); Serial.println(count);
+    //Serial.print("---GS:ENC---"); Serial.print(count), Serial.print(","), Serial.println(_now);
     this->speed = (count/1636.8) * (1000 / _now) * 60; 
   }
   else{
@@ -573,10 +574,11 @@ ISR(PCINT0_vect)
   uint8_t m2_valB = digitalRead(m2.myEnc->pinB);
   
   // Find where the transition took place
-  uint8_t m1_plus  = m1_valA ^ m1.myEnc->lastValA;
-  uint8_t m1_minus = m1_valB ^ m1.myEnc->lastValB;
-  uint8_t m2_plus  = m2_valA ^ m2.myEnc->lastValA;
-  uint8_t m2_minus = m2_valB ^ m2.myEnc->lastValB;
+  uint8_t m1_plus  = m1_valA ^ m1.myEnc->lastValB;
+  uint8_t m1_minus = m1_valB ^ m1.myEnc->lastValA;
+  uint8_t m2_plus  = m2_valA ^ m2.myEnc->lastValB;
+  uint8_t m2_minus = m2_valB ^ m2.myEnc->lastValA;
+  //Serial.print(m1_plus);Serial.print(m1_minus);Serial.print(m2_plus);Serial.println(m2_minus);
   
   // Update respective count
   if (m1_plus)  {m1.myEnc->counts++;}

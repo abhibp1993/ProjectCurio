@@ -65,7 +65,7 @@
   #endif
   
   
-  #define IS_CURR_FEEDBACK    false      // if current feedback is disabled/enabled
+  #define IS_CURR_FEEDBACK    true      // if current feedback is disabled/enabled
   #if (IS_CURR_FEEDBACK == true)         // if current feedback is taken, set the upper bound for error generation/protection
     #define CURR_ERR   6.5               // maximum permissible current in Amps (set to value > 35 for bypassing the protection)
     #define CURR_WARN  5.5               // maximum permissible current in Amps (set to value > 35 for bypassing the protection)
