@@ -21,6 +21,10 @@
  * You should have received a copy of the GNU General Public License					    *
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.			            *
  ***********************************************************************************************************/
+#include <ros.h>
+#include <curio_msgs/motor.h>
+#include <curio_msgs/control_arduino.h>
+#include <std_msgs/String.h>
 
 #include "Conf.h"
 #include "Motor.h"
@@ -35,6 +39,13 @@
 float m1RefSpeed;
 float m2RefSpeed;
 
+//ROS node Handle
+ros::NodeHandle nh; // Arduino node
+
+//ROS message object
+curio_msgs::control_arduino control_arduino_status;
+std_msgs::String error_string;
+
 // Encoder Instantiation
 Encoder e1(M1_CHA, M1_CHB);
 Encoder e2(M2_CHA, M2_CHB);
@@ -43,6 +54,16 @@ Encoder e2(M2_CHA, M2_CHB);
 Motor m1(M1_PWM, M1_IN1, M1_IN2);
 Motor m2(M2_PWM, M2_IN1, M2_IN2);
 
+//ROS publishers
+ros::Publisher control_arduino_status_pub("control_arduino_status", &control_arduino_status);
+ros::Publisher error_pub("curio_control_error", &error_string);
+
+void speed_callback( const curio_msgs::motor& speed_msg){
+  m1RefSpeed = speed_msg.motor1;
+  m2RefSpeed = speed_msg.motor2;
+}
+
+ros::Subscriber<curio_msgs::motor> speed_sub("speed_feedback", speed_callback );
 
 
 /*
@@ -131,10 +152,20 @@ void testCase3(){
 
 
 void setup() {
-  Serial.begin(57600);
+  //Serial.begin(57600);
   
   // DG pins pull-up
   // ---
+  
+  //Ros setup
+  nh.initNode();
+  
+  //Advertise publishers
+  nh.advertise(control_arduino_status_pub);
+  nh.advertise(error_pub);
+  
+  nh.subscribe(speed_sub);
+    
     
   m1.myEnc = &e1;
   m1._isEncoder = true;
@@ -168,7 +199,7 @@ void loop() {
   //testCase1();
   //testCase2();
   //testCase3();
-  
+  nh.spinOnce();
   // Check Time Stamp
   time = micros();
   
@@ -270,7 +301,26 @@ void loop() {
     m2.setPWM(m2RefSpeed);
   #endif
   
+  // Call an rosUpdate function for transmission.
+  control_arduino_status.motor_speed.motor1 = m1CurrSpeed;
+  control_arduino_status.motor_speed.motor2 = m2CurrSpeed;
   
+  #if (IS_CURR_FEEDBACK == true)
+    control_arduino_status.motor_current.motor1 = m1Current;
+    control_arduino_status.motor_current.motor2 = m2Current;
+  #endif
+  
+  #if (IS_VOLT_FEEDBACK == true)
+    control_arduino_status.motor_voltage.motor1 = m1Voltage;
+    control_arduino_status.motor_voltage.motor2 = m2Voltage;
+  #endif
+  
+  control_arduino_status.battery_voltage = battVoltage;
+  
+  control_arduino_status_pub.publish( &control_arduino_status );
+  
+  
+  /*
   // Communication
   Serial.println("-----");
   Serial.print("Batt V: "); Serial.println(battVoltage);
@@ -293,6 +343,6 @@ void loop() {
     m2RefSpeed = Serial.parseFloat();
     Serial.println("ACK");
     delay(20);
-  }
+  } */
   
 }
