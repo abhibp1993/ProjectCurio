@@ -307,6 +307,9 @@ void Motor::setPWM(float duty){
       digitalWrite(in2, !reverse);
 
       pinMode(pwm, OUTPUT);
+      #if (IS_VFDRIVE == true)
+        setPWMFrequency(pwm, getDivisor(pwm, duty));      
+      #endif
       analogWrite(pwm, (int)(duty * 255));
     }
     else if (!reverse && brake){
@@ -319,6 +322,9 @@ void Motor::setPWM(float duty){
       digitalWrite(in2, !reverse);
 
       pinMode(pwm, OUTPUT);
+      #if (IS_VFDRIVE == true)
+        setPWMFrequency(pwm, getDivisor(pwm, duty));      
+      #endif
       analogWrite(pwm, (int)(duty * 255));
     }
     else{
