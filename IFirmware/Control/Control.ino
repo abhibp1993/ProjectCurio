@@ -1,51 +1,141 @@
-/************************************************************************************************************
- * Control.ino - Firmware base for Control Arduino                                                .         *
- * This file is a part of ProjectCurio.                                                                     *
- *												            *															*
- * Copyright 2015 Abhishek N. Kulkarni (abhi.bp1993@gmail.com)		                                    *
- * The latest firmware is available at https://github.com/abhibp1993/ProjectCurio/              	    *
- * Last update: 26 Aug 2015                                                                                 *
- ************************************************************************************************************
- 
- ************************************************************************************************************
- * This program is free software: you can redistribute it and/or modify					    *
- * it under the terms of the GNU General Public License as published by					    *
- * the Free Software Foundation, either version 3 of the License, or					    *
- * (at your option) any later version.									    *
- *													    *
- * This program is distributed in the hope that it will be useful,					    *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of					    *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the					    *
- * GNU General Public License for more details.								    *
- *													    *
- * You should have received a copy of the GNU General Public License					    *
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.			            *
- ***********************************************************************************************************/
-
-
-#include "Conf.h"
+#include "GlobalConfig.h"
 #include "Motor.h"
-#include "PinConfig.h"
-#if (SELECT_CHANNEL == CHANNEL_SER)         // if current feedback is taken, set the upper bound for error generation/protection
-  #include "CommSerial.h"
-#else
-  include "CommI2C.h"
-#endif
 
 
+// Global Communication Variables
+bool errOccurred = false, isRPM = true;
+float batteryVoltage; 
+float mLeftRef, mRightRef;
+float mLeftSpeed, mRightSpeed; 
+float mLeftCurrent, mRightCurrent; 
+float mLeftDistance, mRightDistance;
+float mLeftVoltage, mRightVoltage;
+uint16_t gear;
+char strWarnErr[50];
+uint8_t ptrWarnErr;
+
+// Motor Instances
+Motor mLeft(MLeft_PWM, MLeft_IN1, MLeft_IN2);
+Motor mRight(MRight_PWM, MRight_IN1, MRight_IN2);
+
+
+float getBatteryVoltage(){
+  uint16_t input;
+  for (int i = 0; i < BATTV_WINDOWSIZE; i++){
+    input += analogRead(BATT_V);
+  }
+  
+  // Scale it appropriately to actual voltage in Volts and return
+  // To Do.
+}
+
+void reportError(char errStr[]){
+  uint8_t i = 0;
+  while (errStr[i] != '\0'){
+    *(strWarnErr + ptrWarnErr) = errStr[i];
+    i++;
+    ptrWarnErr++;
+  }  
+}
 
 void setup() {
+  // ROS Node Initialization
+  // To Do
   
+  // Advertise Publishers and Subscribers
+  // To Do 
+  
+  // Initialize Pin Configuration
+  initializePins();
+  
+  // Motor: Attach Encoders
+  mLeft.attachEncoder(MLeft_CHA, MLeft_CHB, 1);
+  mRight.attachEncoder(MRight_CHA, MRight_CHB, 2);
+
+  // If offline PID is required, set the gains
+  #if (OFFLINE_PID == true)
+    mLeft.Kp = MLEFT_Kp;
+    mLeft.Ki = MLEFT_KI;
+    mLeft.Kd = MLEFT_KD;
+    
+    mRight.Kp = MRIGHT_Kp;
+    mRight.Ki = MRIGHT_Ki;
+    mRight.Kd = MRIGHT_Kd;
+  #endif
+  
+  // INDICATOR 3: GREEN
+  digitalWrite(LED_IND3, HIGH);
 }
 
 void loop() {
   
   // Check Battery Voltage
+  batteryVoltage = getBatteryVoltage();
+  if (batteryVoltage < BATTV_THRESHOLD){
+    // REPORT ERROR 
+    errOccurred = true;
+    reportError(ERR_BATTV);
+  }
   
-  // Check Current through motors
-  
-  // Check Voltage across motors
-  
-  // 
+  // If no error till now... then update variables
+  if (!errOccurred){
+    
+    // Update motor parameters
+    mLeft.update();
+    mRight.update();
+    
+    // Update Variables
+    mLeftSpeed = mLeft.getSpeed();
+    mRightSpeed = mRight.getSpeed();
+    
+    mLeftCurrent = mLeft.getCurrent();
+    mRightCurrent = mRight.getCurrent(); 
+    
+    mLeftDistance = mLeft.getDistance();
+    mRightDistance = mRight.getDistance();
+    
+    mLeftVoltage = mLeft.getVoltage();
+    mRightVoltage = mRight.getVoltage(); 
+    
+    gear = mLeft.getGear();
+    
+    // Check for protection
+    if (mLeftCurrent > CURR_SOFT_THRESHOLD){ reportError(WARN_LEFTM_CURR); }
+    else if (mLeftCurrent > CURR_HARD_THRESHOLD){ reportError(ERR_LEFTM_CURR); errOccurred = true; }
+    
+    if (mRightCurrent > CURR_SOFT_THRESHOLD){ reportError(WARN_RIGHTM_CURR); }
+    else if (mRightCurrent > CURR_HARD_THRESHOLD){ reportError(ERR_RIGHTM_CURR); errOccurred = true; }
 
+    if (mLeftVoltage > VOL_SOFT_THRESHOLD){ reportError(WARN_LEFTM_VOL); }
+    if (mRightVoltage > VOL_SOFT_THRESHOLD){ reportError(WARN_RIGHTM_VOL); }
+  }
+  // else: all the values should be treated as garbage
+  
+  // If no error till now... then update variables
+  if (!errOccurred){
+    if (isRPM){
+      mLeft.setSpeed(mLeftRef);
+      mRight.setSpeed(mRightRef);
+    }
+    else{
+      mLeft.isAutogear = true;
+      mRight.isAutogear = true;
+      
+      mLeft.setPWM(mLeftRef);
+      mRight.setPWM(mRightRef);
+    }
+  }
+  else{
+    mLeft.isAutogear = false;
+    mRight.isAutogear = false;
+    
+    mLeft.setSpeed(0);
+    mRight.setSpeed(0);
+  }
+  
+  // ROS Communication 
+  // To Do
+  
+  // Book keeping
+  ptrWarnErr = 0;
 }
