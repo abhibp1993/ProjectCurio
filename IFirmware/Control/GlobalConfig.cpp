@@ -1,5 +1,8 @@
 #include "GlobalConfig.h"
 
+/*!
+  Initializes the direction of Pins (INPUT/OUTPUT). 
+*/
 void initializePins(){
 
   pinMode(MLeft_PWM, OUTPUT);

@@ -2,22 +2,28 @@
 #include "Arduino.h"
 
 // Global Variables: Compiler shall not optimize these!
-volatile uint8_t m1_chA, m1_chB, m2_chA, m2_chB;
-volatile long int m1_counts, m2_counts;
-volatile int m1_chA_lastVal, m1_chB_lastVal;
-volatile int m2_chA_lastVal, m2_chB_lastVal;
-volatile int m1_error, m2_error;
+volatile uint8_t enc1_chA; /*!< Arduino pin connected to Channel A of Encoder 1  */
+volatile uint8_t enc1_chB; /*!< Arduino pin connected to Channel B of Encoder 1  */
+volatile uint8_t enc2_chA; /*!< Arduino pin connected to Channel A of Encoder 2  */
+volatile uint8_t enc2_chB; /*!< Arduino pin connected to Channel B of Encoder 2  */
+
+volatile long int enc1_counts; /*!< Counts on Encoder 1  \note: It is a 32-bit quantity */
+volatile long int enc2_counts; /*!< Counts on Encoder 2  \note: It is a 32-bit quantity */
+
+volatile int enc1_chA_lastVal; /*!< Last logical state of Channel A of Encoder 1  */
+volatile int enc1_chB_lastVal; /*!< Last logical state of Channel B of Encoder 1  */ 
+volatile int enc2_chA_lastVal; /*!< Last logical state of Channel A of Encoder 2  */
+volatile int enc2_chB_lastVal; /*!< Last logical state of Channel B of Encoder 2  */
+volatile int enc1_error; /*!< Errors on Encoder 1  */
+volatile int enc2_error; /*!< Errors on Encoder 2  */
 
 
-/* [HELPER]**********************************************************************
-Structure: IOStruct 
-
-Description:
-  Stores the AVR based Register pointers for the given pin
+/*! 
+  Stores the AVR based Register pointers for the given Arduino pin.
   
-Refer PoluluMotor Library by Abhishek N. Kulkarni (abhibp1993)
-Refer to Polulu's OrangutanDigital Library.
-**********************************************************************************/
+  \sa PoluluMotor Library by Abhishek N. Kulkarni (https://github.com/abhibp1993/PoluluMotor)
+  \sa Polulu's OrangutanDigital Library.
+*/
 typedef struct IOStruct
 {
 	// if these aren't volatile, the compiler sometimes incorrectly optimizes away operations involving these registers:
@@ -28,21 +34,17 @@ typedef struct IOStruct
 } IOPin;
 
 
-/* [HELPER]**********************************************************************
-Function: getIORegisters 
-Parameters: 
-  1. pin: pin for which the registers need to be found out. 
-  2. io: IOPin instance. 
-
-Description:
-  The function modifies the IOPin structure to contain the respective registers. 
+/*! 
+  Updates IOPin structure to contain the respective registers to corresponding Arduino pin.
   
-Remark:
-  In earlier version, the functions were implemented by hand. However, Arduino
-  library has optimized the register access functions using macros to Flash Memory.
+  \param pin Arduino pin for which the registers need to be found out. 
+  \param io Address of IOPin instance. 
 
-Refer to hardware/arduino/cores/arduino/Arduino.h for understanding.
-**********************************************************************************/
+  \sa hardware/arduino/cores/arduino/Arduino.h for understanding of implementation.
+  \note
+    In earlier version, the functions were implemented by hand. However, Arduino
+    library has optimized the register access functions using macros to Flash Memory.  
+*/
 void getIORegisters(unsigned char pin, IOPin* io){
   uint8_t port = digitalPinToPort(pin);
   
@@ -52,17 +54,14 @@ void getIORegisters(unsigned char pin, IOPin* io){
   io->bitMask = digitalPinToBitMask(pin);
 }
   
-/* [HELPER]**********************************************************************
-Function: enableInterrupts 
-Parameters: 
-  1. pin: pin on which the PCINT needs to be enabled. 
-
-Description:
-  The function configures all internal registers as required to configure the pin
+/*! 
+  Configures all internal registers as required to configure the pin
   as Pin Change Interrupt. 
+
+  \param pin Arduino pin on which the Interrupt (PCINT) needs to be enabled. 
   
-Refer to hardware/arduino/cores/arduino/Arduino.h for understanding.
-**********************************************************************************/
+  \sa hardware/arduino/cores/arduino/Arduino.h for understanding of implementation.
+*/
 void enableInterrupts(uint8_t pin){
 
   // Disable Interrupts while configuration is in progress
@@ -91,37 +90,31 @@ void enableInterrupts(uint8_t pin){
 }
 
 
-/* [PUBLIC]**********************************************************************
-Function: enableInterrupts 
-Parameters: 
-  1. chA: The Arduino pin to which channel A of Encoder is connected.
-  2. chB: The Arduino pin to which channel B of Encoder is connected.
+/*! 
+  Wrapper function to enable the Encoder 1.
 
-Description:
-  Wrapper function to enable the Encoders on Motor 1.
+  \param chA: The Arduino pin to which channel A of Encoder is connected.
+  \param chB: The Arduino pin to which channel B of Encoder is connected.
   
-**********************************************************************************/
-void m1_attachEncoder(uint8_t chA, uint8_t chB){
-  m1_chA = chA;
-  m1_chB = chB;
+*/
+void enc1_attachEncoder(uint8_t chA, uint8_t chB){
+  enc1_chA = chA;
+  enc1_chB = chB;
   
   enableInterrupts(chA);
   enableInterrupts(chB);
 }
 
-/* [PUBLIC]**********************************************************************
-Function: enableInterrupts 
-Parameters: 
-  1. chA: The Arduino pin to which channel A of Encoder is connected.
-  2. chB: The Arduino pin to which channel B of Encoder is connected.
+/*! 
+  Wrapper function to enable the Encoder 2.
 
-Description:
-  Wrapper function to enable the Encoders on Motor 2.
+  \param chA: The Arduino pin to which channel A of Encoder is connected.
+  \param chB: The Arduino pin to which channel B of Encoder is connected.
   
-**********************************************************************************/
-void m2_attachEncoder(uint8_t chA, uint8_t chB){
-  m2_chA = chA;
-  m2_chB = chB;
+*/
+void enc2_attachEncoder(uint8_t chA, uint8_t chB){
+  enc2_chA = chA;
+  enc2_chB = chB;
   
   enableInterrupts(chA);
   enableInterrupts(chB);
@@ -130,120 +123,101 @@ void m2_attachEncoder(uint8_t chA, uint8_t chB){
   
 
 
-/* [PUBLIC]**********************************************************************
-Function: m1_getCounts
-Parameters: None
-
-Description:
-  The function returns the counts recorded on Motor 1 till now.
-  
-**********************************************************************************/
-long int m1_getCounts(){
+/*!
+  Returns the counts recorded on Encoder 1 till now from start. 
+  \note: The Clockwise rotation of encoder results in incrementing of count, while the 
+    CounterClockwise rotation of encoder results in decrementing. 
+*/
+long int enc1_getCounts(){
   cli();
-  long int temp = m1_counts;
+  long int temp = enc1_counts;
   sei();
   return temp;
 }
 
-/* [PUBLIC]**********************************************************************
-Function: m2_getCounts
-Parameters: None
-
-Description:
-  The function returns the counts recorded on Motor 2 till now.
-  
-**********************************************************************************/
-long int m2_getCounts(){
+/*!
+  Returns the counts recorded on Encoder 2 till now from start. 
+  \note: The Clockwise rotation of encoder results in incrementing of count, while the 
+    CounterClockwise rotation of encoder results in decrementing. 
+*/
+long int enc2_getCounts(){
   cli();
-  long int temp = m2_counts;
+  long int temp = enc2_counts;
   sei();
   return temp;
 }
 
-/* [PUBLIC]**********************************************************************
-Function: m1_getCountsAndReset
-Parameters: None
-
-Description:
-  The function returns the counts recorded on Motor 1 till now and resets the 
-  counter to ZERO.
-  
-**********************************************************************************/
-long int m1_getCountsAndReset(){
+/*!
+  Returns the counts recorded on Encoder 1 since last call to this function
+  and resets the counter to ZERO.
+*/
+long int enc1_getCountsAndReset(){
   cli();
-  long int temp = m1_counts;
-  m1_counts = 0;
+  long int temp = enc1_counts;
+  enc1_counts = 0;
   sei();
   return temp;
 }
 
-/* [PUBLIC]**********************************************************************
-Function: m2_getCountsAndReset
-Parameters: None
-
-Description:
-  The function returns the counts recorded on Motor 2 till now and resets the 
-  counter to ZERO.
-  
-**********************************************************************************/
-long int m2_getCountsAndReset(){
+/*!
+  Returns the counts recorded on Encoder 2 since last call to this function
+  and resets the counter to ZERO.
+*/
+long int enc2_getCountsAndReset(){
   cli();
-  long int temp = m2_counts;
-  m2_counts = 0;
+  long int temp = enc2_counts;
+  enc2_counts = 0;
   sei();
   return temp;
 }
 
 
-// Interrupt Handling Routine
-long int time = 0; 
+/*!
+  Implements the Interrupt Service Routine to asynchronously detect the transitions
+  on the encoders and increment or decrement the count accordingly.
+*/
 ISR(PCINT0_vect){
-  
-  // Check if ISR is called properly.
-  time = micros();
-  
+    
   // Read present status of pin
-  uint8_t m1_chA_now = digitalRead(m1_chA); //digitalRead(M1_CHA);
-  uint8_t m1_chB_now = digitalRead(m1_chB); //digitalRead(M1_CHB);
-  uint8_t m2_chA_now = digitalRead(m2_chA); //digitalRead(M2_CHA);
-  uint8_t m2_chB_now = digitalRead(m2_chB); //digitalRead(M2_CHB);
+  uint8_t enc1_chA_now = digitalRead(enc1_chA); //digitalRead(enc1_CHA);
+  uint8_t enc1_chB_now = digitalRead(enc1_chB); //digitalRead(enc1_chB);
+  uint8_t enc2_chA_now = digitalRead(enc2_chA); //digitalRead(enc2_chA);
+  uint8_t enc2_chB_now = digitalRead(enc2_chB); //digitalRead(enc2_chB);
   
   
-  // if transition occured on M1, update M1.
-  if ((m1_chA_now ^ m1_chA_lastVal) || (m1_chB_now ^ m1_chB_lastVal)){
+  // if transition occured on enc1, update enc1.
+  if ((enc1_chA_now ^ enc1_chA_lastVal) || (enc1_chB_now ^ enc1_chB_lastVal)){
     
     // Update Count
-    if (m1_chB_now ^ m1_chA_lastVal){ m1_counts++; }
-    if (m1_chA_now ^ m1_chB_lastVal){ m1_counts--; }
+    if (enc1_chB_now ^ enc1_chA_lastVal){ enc1_counts++; }
+    if (enc1_chA_now ^ enc1_chB_lastVal){ enc1_counts--; }
     
     // Update error, if any
-    if ((m1_chA_now ^ m1_chA_lastVal) && (m1_chB_now ^ m1_chB_lastVal)){ m1_error = 1; }
+    if ((enc1_chA_now ^ enc1_chA_lastVal) && (enc1_chB_now ^ enc1_chB_lastVal)){ enc1_error = 1; }
     
     // update last value
-    m1_chA_lastVal = m1_chA_now;
-    m1_chB_lastVal = m1_chB_now;
+    enc1_chA_lastVal = enc1_chA_now;
+    enc1_chB_lastVal = enc1_chB_now;
   }
   
-  // if transition occured on M1, update count of M1.
-  if ((m2_chA_now ^ m2_chA_lastVal) || (m2_chB_now ^ m2_chB_lastVal)){
+  // if transition occured on enc1, update count of enc1.
+  if ((enc2_chA_now ^ enc2_chA_lastVal) || (enc2_chB_now ^ enc2_chB_lastVal)){
     
     // Update Count
-    if (m2_chB_now ^ m2_chA_lastVal){ m2_counts++; }
-    if (m2_chA_now ^ m2_chB_lastVal){ m2_counts--; }
+    if (enc2_chB_now ^ enc2_chA_lastVal){ enc2_counts++; }
+    if (enc2_chA_now ^ enc2_chB_lastVal){ enc2_counts--; }
     
     // Update error, if any
-    if ((m2_chA_now ^ m2_chA_lastVal) && (m2_chB_now ^ m2_chB_lastVal)){ m2_error = 1; }
+    if ((enc2_chA_now ^ enc2_chA_lastVal) && (enc2_chB_now ^ enc2_chB_lastVal)){ enc2_error = 1; }
     
     // update last value
-    m2_chA_lastVal = m2_chA_now;
-    m2_chB_lastVal = m2_chB_now;
-  }
- 
-   time = micros() - time; 
+    enc2_chA_lastVal = enc2_chA_now;
+    enc2_chB_lastVal = enc2_chB_now;
+  } 
 }
 
-// Alias other PCINTs to execute the routine of PCINT0
-ISR(PCINT1_vect, ISR_ALIASOF(PCINT0_vect));
-ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
+
+ISR(PCINT1_vect, ISR_ALIASOF(PCINT0_vect)); /*!< PCINT1 aliased to execute the routine of PCINT0 */
+ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect)); /*!< PCINT2 aliased to execute the routine of PCINT0 */
 
 
