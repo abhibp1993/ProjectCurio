@@ -41,10 +41,10 @@
                                            // (helpful in uniquely identifying this device)
 
 //  #define IS_CONFIGURABLE      true      // if online configuration changes are permitted   (******* NOT CURRENTLY IMPLEMENTED *******)
-  #define RAW_OR_PROCESSED     true      // if return data is raw encoder reading or processed motor speed (true -> processed)
-  #define IS_VFDRIVE           true      // if variable frequency method is enabled (true: better performance)
-  #define IS_PID_ACTIVE        false      // if internal PID is enabled. (whether or not to engage can be configured online)
-  #define IS_ERROR_ON          false      // if error state reporting is ON/OFF
+  #define RAW_OR_PROCESSED     true        // if return data is raw encoder reading or processed motor speed (true -> processed)
+  #define IS_VFDRIVE           true        // if variable frequency method is enabled (true: better performance)
+  #define IS_PID_ACTIVE        false       // if internal PID is enabled. (whether or not to engage can be configured online)
+  #define IS_ERROR_ON          false       // if error state reporting is ON/OFF
 //  #define IS_HYBRID_SWITCH_ON  false     // if hybrid control switch enabled    (******* NOT CURRENTLY IMPLEMENTED *******)
   
   

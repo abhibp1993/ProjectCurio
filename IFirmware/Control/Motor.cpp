@@ -40,7 +40,7 @@ Description:
 Refer PoluluMotor Library by Abhishek N. Kulkarni (abhibp1993)
 Adopted from macegr's code. (Post: http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1235060559/0#4)
 **********************************************************************************/
-typedef struct IOStruct
+typedef struct IOStructge
 {
 	// if these aren't volatile, the compiler sometimes incorrectly optimizes away operations involving these registers:
 	volatile unsigned char* pinRegister;
@@ -575,7 +575,7 @@ ISR(PCINT0_vect)
   
   // Read current status of encoder channels
   uint8_t m1_valA = digitalRead(m1.myEnc->pinA);
-  uint8_t m1_valB = digitalRead(m1.myEnc->pinB);
+  uint8_t m1_valB = digitalRead(m1.myEnc->pinB); 
   uint8_t m2_valA = digitalRead(m2.myEnc->pinA);
   uint8_t m2_valB = digitalRead(m2.myEnc->pinB);
   

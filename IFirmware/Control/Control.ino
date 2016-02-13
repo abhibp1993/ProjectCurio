@@ -200,6 +200,7 @@ void loop() {
   //testCase2();
   //testCase3();
   nh.spinOnce();
+  
   // Check Time Stamp
   time = micros();
   
@@ -301,6 +302,8 @@ void loop() {
     m2.setPWM(m2RefSpeed);
   #endif
   
+  
+  
   // Call an rosUpdate function for transmission.
   control_arduino_status.motor_speed.motor1 = m1CurrSpeed;
   control_arduino_status.motor_speed.motor2 = m2CurrSpeed;
@@ -316,33 +319,45 @@ void loop() {
   #endif
   
   control_arduino_status.battery_voltage = battVoltage;
-  
   control_arduino_status_pub.publish( &control_arduino_status );
   
   
-  /*
+  
+/*  
   // Communication
-  Serial.println("-----");
-  Serial.print("Batt V: "); Serial.println(battVoltage);
-  #if (IS_CURR_FEEDBACK == true)
-    Serial.print("M1 I: "); Serial.println(m1Current);
-    Serial.print("M2 I: "); Serial.println(m2Current);    
-  #endif
-  #if (IS_VOLT_FEEDBACK == true)
-    Serial.print("M1 V: "); Serial.println(m1Voltage);
-    Serial.print("M2 V: "); Serial.println(m2Voltage);
-  #endif
-  Serial.print("M1 refS: "); Serial.print(m1RefSpeed); Serial.print("\tM1 currS: "); Serial.println(m1CurrSpeed);
-  Serial.print("M2 refS: "); Serial.print(m2RefSpeed); Serial.print("\tM2 currS: "); Serial.println(m2CurrSpeed);
+  //Serial.println("-----");
+  //Serial.print("Batt V: "); 
+  Serial.print(battVoltage);
+  //#if (IS_CURR_FEEDBACK == true)
+    //Serial.print(",M1 I: "); 
+    //Serial.print(","); Serial.print(m1Current);
+    //Serial.print(",M2 I: "); 
+    //Serial.print(","); Serial.print(m2Current);    
+  //#endif
+  //#if (IS_VOLT_FEEDBACK == true)
+    //Serial.print("M1 V: "); 
+    //Serial.print(","); Serial.print(m1Voltage);
+    //Serial.print("M2 V: "); 
+    //Serial.print(","); Serial.print(m2Voltage);
+  //#endif
+  //Serial.print("M1 refS: "); 
+  Serial.print(","); Serial.print(m1RefSpeed); 
+  //Serial.print("\tM1 currS: "); 
+  Serial.print(","); Serial.print(m1CurrSpeed);
+  //Serial.print("M2 refS: "); 
+  Serial.print(","); Serial.print(m2RefSpeed); 
+  //Serial.print("\tM2 currS: "); 
+  Serial.print(","); Serial.print(m2CurrSpeed);
   
   time = micros() - time;
-  Serial.print("Time: "); Serial.println(time);
+  //Serial.print("Time: "); 
+  Serial.print(","); Serial.println(time);
   
   if (Serial.available() > 1){
     m1RefSpeed = Serial.parseFloat();
     m2RefSpeed = Serial.parseFloat();
-    Serial.println("ACK");
+    //Serial.println("ACK");
     delay(20);
-  } */
-  
+  } 
+*/
 }

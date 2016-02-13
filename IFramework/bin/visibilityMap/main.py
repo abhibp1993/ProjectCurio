@@ -463,8 +463,8 @@ if __name__ == "__main__":
     #sObs3 = util.Polygon([util.Point2D(5, 0), util.Point2D(5, 5), util.Point2D(7, 1)])
     mObs1 = util.Polygon([util.Point2D(1, 4), util.Point2D(3, 3), util.Point2D(2, 5)])
     
-    m = Map(bound, statObs=[sObs1, sObs2], mvObs=[mObs1])
-    robot = Robot(util.Point2D(1, 4), util.Point2D(9, 4))
+    m = Map(bound, statObs=[sObs1], mvObs=[mObs1, sObs2])
+    robot = Robot(util.Point2D(3, 4), util.Point2D(9, 10))
     robot.initialize()
     # Animate
     anim.animate(m, robot)
